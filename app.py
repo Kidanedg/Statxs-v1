@@ -702,7 +702,7 @@ if df is not None:
 # TIME SERIES
 # =====================================================
 
-elif analysis_category == "Time Series":
+if analysis_category == "Time Series":
 
     st.subheader("📈 Time Series Analysis")
 
