@@ -250,7 +250,7 @@ if df is not None:
 
             st.pyplot(fig)
             
-    # =====================================================
+ # =====================================================
 # REGRESSION
 # =====================================================
 
@@ -302,7 +302,6 @@ if analysis_category == "Regression":
 
             st.info(interpret_r2(model.rsquared))
 
-            # Coefficient table
             coef_table = pd.DataFrame({
                 "Coefficient": model.params,
                 "Std Error": model.bse,
@@ -315,15 +314,13 @@ if analysis_category == "Regression":
             st.markdown("### Coefficients")
             st.dataframe(coef_table.round(4), use_container_width=True)
 
-            # Regression Equation
-            intercept = model.params[0]
-            slope = model.params[1]
+            intercept = model.params["const"]
+            slope = model.params[x]
 
             st.success(
-                f"Estimated Equation: **{y} = {round(intercept,4)} + {round(slope,4)}×{x}**"
+                f"Estimated Equation: **{y} = {round(intercept,4)} + {round(slope,4)} × {x}**"
             )
 
-            # Plot
             fig, ax = plt.subplots()
 
             sns.regplot(x=data[x], y=data[y], ci=95, ax=ax)
@@ -501,8 +498,8 @@ if analysis_category == "Regression":
 
             data = df[[y]+Xvars].dropna()
 
-            selected = []
             remaining = list(Xvars)
+            selected = []
 
             while remaining:
 
@@ -521,21 +518,10 @@ if analysis_category == "Regression":
 
                 scores.sort()
 
-                best_aic, best_candidate = scores[0]
+                best_aic,best_candidate = scores[0]
 
                 selected.append(best_candidate)
                 remaining.remove(best_candidate)
-
-                if len(selected) > 1:
-
-                    X = sm.add_constant(data[selected])
-                    Y = data[y]
-
-                    model = sm.OLS(Y,X).fit()
-
-                    if model.pvalues.max() > 0.05:
-                        selected.pop()
-                        break
 
             st.markdown("### Selected Variables")
             st.success(selected)
