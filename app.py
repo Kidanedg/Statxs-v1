@@ -318,22 +318,6 @@ def regression_table(model, stat_label="t"):
 
     return coef_table.round(4)
 
-
-# =====================================================
-# CATEGORY SELECTOR (IMPORTANT)
-# =====================================================
-
-analysis_category = st.sidebar.selectbox(
-    "Analysis Category",
-    [
-        "Descriptive Statistics",
-        "Graphics",
-        "Regression",
-        "Time Series"
-    ]
-)
-
-
 # =====================================================
 # REGRESSION
 # =====================================================
