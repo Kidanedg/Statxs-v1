@@ -1,7 +1,6 @@
 ```python
 # =====================================================
 # StatX v1 – Statistical Analysis Platform
-# With Automatic Statistical Interpretation
 # =====================================================
 
 import streamlit as st
@@ -36,7 +35,6 @@ if uploaded:
 
     if uploaded.name.endswith(".csv"):
         df = pd.read_csv(uploaded)
-
     else:
         df = pd.read_excel(uploaded)
 
@@ -48,10 +46,8 @@ def interpret_p(p):
 
     if p < 0.01:
         return "Strong evidence against the null hypothesis (p < 0.01). Reject H0."
-
     elif p < 0.05:
         return "Statistically significant at 5% level (p < 0.05). Reject H0."
-
     else:
         return "Not statistically significant (p ≥ 0.05). Fail to reject H0."
 
@@ -60,13 +56,10 @@ def interpret_r2(r2):
 
     if r2 > 0.75:
         return "Very strong model fit."
-
     elif r2 > 0.50:
         return "Moderate model fit."
-
     elif r2 > 0.25:
         return "Weak model fit."
-
     else:
         return "Very weak model fit."
 
@@ -82,15 +75,21 @@ if df is not None:
     numeric_cols = df.select_dtypes(include=np.number).columns
     categorical_cols = df.select_dtypes(exclude=np.number).columns
 
-    menu = st.sidebar.selectbox(
-        "Analysis",
+    # ============================================
+    # SIDEBAR MENU
+    # ============================================
+
+    analysis_category = st.sidebar.selectbox(
+        "Analysis Category",
         [
             "Descriptive Statistics",
             "Graphics",
             "Hypothesis Tests",
             "ANOVA",
             "Regression",
-            "Chi-Square Tests"
+            "Chi-Square Tests",
+            "Time Series",
+            "Quality Control"
         ]
     )
 
@@ -98,7 +97,7 @@ if df is not None:
 # DESCRIPTIVE STATISTICS
 # =====================================================
 
-    if menu == "Descriptive Statistics":
+    if analysis_category == "Descriptive Statistics":
 
         st.subheader("Descriptive Statistics")
 
@@ -119,24 +118,13 @@ if df is not None:
 
         st.table(summary)
 
-        st.write("Interpretation")
-
-        if summary["Skewness"][0] > 0:
-            st.write("Distribution is positively skewed.")
-
-        elif summary["Skewness"][0] < 0:
-            st.write("Distribution is negatively skewed.")
-
-        else:
-            st.write("Distribution is symmetric.")
-
 # =====================================================
 # GRAPHICS
 # =====================================================
 
-    elif menu == "Graphics":
+    elif analysis_category == "Graphics":
 
-        st.subheader("Data Visualization")
+        st.subheader("Visualization")
 
         plot = st.selectbox(
             "Plot Type",
@@ -151,9 +139,6 @@ if df is not None:
             sns.histplot(df[var], kde=True)
             st.pyplot(fig)
 
-            st.write("Interpretation")
-            st.write("Histogram shows the distribution shape of the variable.")
-
         elif plot == "Boxplot":
 
             var = st.selectbox("Variable", numeric_cols)
@@ -162,288 +147,91 @@ if df is not None:
             sns.boxplot(y=df[var])
             st.pyplot(fig)
 
-            st.write("Interpretation")
-            st.write("Boxplot highlights median, spread, and potential outliers.")
-
-        elif plot == "Scatter":
-
-            x = st.selectbox("X variable", numeric_cols)
-            y = st.selectbox("Y variable", numeric_cols)
-
-            fig, ax = plt.subplots()
-            sns.scatterplot(x=df[x], y=df[y])
-            st.pyplot(fig)
-
-            corr = df[[x,y]].corr().iloc[0,1]
-
-            st.write("Correlation:",corr)
-
-            if abs(corr) > 0.7:
-                st.write("Strong relationship between variables.")
-
-            elif abs(corr) > 0.4:
-                st.write("Moderate relationship.")
-
-            else:
-                st.write("Weak relationship.")
-
-        elif plot == "Correlation Heatmap":
-
-            corr = df[numeric_cols].corr()
-
-            fig, ax = plt.subplots(figsize=(8,6))
-            sns.heatmap(corr, annot=True, cmap="coolwarm")
-            st.pyplot(fig)
-
-            st.write("Interpretation")
-            st.write("Heatmap shows pairwise correlations among variables.")
-
 # =====================================================
-# HYPOTHESIS TESTING
+# TIME SERIES
 # =====================================================
 
-    elif menu == "Hypothesis Tests":
+    elif analysis_category == "Time Series":
 
-        st.subheader("Hypothesis Testing")
+        st.subheader("Time Series Analysis")
 
-        test = st.selectbox(
-            "Select Test",
-            ["One Sample t-test","Two Sample t-test"]
+        method = st.selectbox(
+            "Method",
+            ["Time Series Plot","Moving Average","Trend Estimation"]
         )
 
-        if test == "One Sample t-test":
+        var = st.selectbox("Variable", numeric_cols)
 
-            var = st.selectbox("Variable", numeric_cols)
-            mu = st.number_input("Hypothesized Mean")
+        data = df[var]
 
-            t,p = stats.ttest_1samp(df[var], mu)
+        if method == "Time Series Plot":
 
-            st.write("t statistic:",t)
-            st.write("p value:",p)
+            fig, ax = plt.subplots()
+            ax.plot(data)
+            st.pyplot(fig)
 
-            st.write("Interpretation")
-            st.write(interpret_p(p))
+        elif method == "Moving Average":
 
-        elif test == "Two Sample t-test":
+            window = st.slider("Window",2,20,5)
 
-            group = st.selectbox("Grouping variable", categorical_cols)
-            var = st.selectbox("Variable", numeric_cols)
+            ma = data.rolling(window).mean()
 
-            groups = df[group].unique()
+            fig, ax = plt.subplots()
+            ax.plot(data,label="Original")
+            ax.plot(ma,label="Moving Average")
+            ax.legend()
 
-            g1 = df[df[group]==groups[0]][var]
-            g2 = df[df[group]==groups[1]][var]
-
-            t,p = stats.ttest_ind(g1,g2)
-
-            st.write("t statistic:",t)
-            st.write("p value:",p)
-
-            st.write("Interpretation")
-            st.write(interpret_p(p))
-
-# =====================================================
-# ANOVA
-# =====================================================
-
-    elif menu == "ANOVA":
-
-        st.subheader("One Way ANOVA")
-
-        y = st.selectbox("Dependent variable", numeric_cols)
-        x = st.selectbox("Factor", categorical_cols)
-
-        model = smf.ols(f"{y} ~ C({x})", data=df).fit()
-
-        table = sm.stats.anova_lm(model)
-
-        st.dataframe(table)
-
-        p = table["PR(>F)"][0]
-
-        st.write("Interpretation")
-        st.write(interpret_p(p))
-
-# =====================================================
-# REGRESSION
-# =====================================================
-
-    elif menu == "Regression":
-
-        st.subheader("Linear Regression")
-
-        y = st.selectbox("Dependent variable", numeric_cols)
-        X = st.multiselect("Independent variables", numeric_cols)
-
-        if X:
-
-            Xdata = df[X]
-            ydata = df[y]
-
-            model = LinearRegression()
-            model.fit(Xdata, ydata)
-
-            pred = model.predict(Xdata)
-
-            r2 = r2_score(ydata,pred)
-
-            st.write("R²:",r2)
-
-            coef = pd.DataFrame({
-                "Variable":X,
-                "Coefficient":model.coef_
-            })
-
-            st.table(coef)
-
-            st.write("Interpretation")
-            st.write(interpret_r2(r2))
-
-# =====================================================
-# CHI SQUARE TESTS
-# =====================================================
-
-    elif menu == "Chi-Square Tests":
-
-        st.subheader("Chi-Square Test of Independence")
-
-        var1 = st.selectbox("Variable 1", categorical_cols)
-        var2 = st.selectbox("Variable 2", categorical_cols)
-
-        table = pd.crosstab(df[var1], df[var2])
-
-        chi2,p,_,_ = stats.chi2_contingency(table)
-
-        st.dataframe(table)
-
-        st.write("Chi-square:",chi2)
-        st.write("p value:",p)
-
-        st.write("Interpretation")
-        st.write(interpret_p(p))
-
-else:
-
-    st.info("Upload a dataset to begin analysis.")
-
-# =====================================================
-# TIME SERIES ANALYSIS
-# =====================================================
-
-elif analysis_category == "Time Series":
-
-    st.subheader("Time Series Analysis")
-
-    var = st.selectbox("Select Time Series Variable", numeric_cols)
-
-    data = df[var]
-
-    if method == "Time Series Plot":
-
-        fig, ax = plt.subplots()
-        ax.plot(data)
-        ax.set_title("Time Series Plot")
-        st.pyplot(fig)
-
-        st.write("Interpretation")
-        st.write("The plot shows the evolution of the variable over time.")
-
-    elif method == "Moving Average":
-
-        window = st.slider("Window Size",2,20,5)
-
-        ma = data.rolling(window).mean()
-
-        fig, ax = plt.subplots()
-        ax.plot(data,label="Original")
-        ax.plot(ma,label="Moving Average")
-        ax.legend()
-
-        st.pyplot(fig)
-
-        st.write("Interpretation")
-        st.write("Moving average smooths short-term fluctuations and reveals trends.")
-
-    elif method == "Trend Estimation":
-
-        t = np.arange(len(data))
-
-        model = LinearRegression()
-        model.fit(t.reshape(-1,1),data)
-
-        trend = model.predict(t.reshape(-1,1))
-
-        fig, ax = plt.subplots()
-        ax.plot(data,label="Original")
-        ax.plot(trend,label="Trend")
-        ax.legend()
-
-        st.pyplot(fig)
-
-        st.write("Interpretation")
-        st.write("Trend line indicates long-term direction of the series.")
+            st.pyplot(fig)
 
 # =====================================================
 # QUALITY CONTROL
 # =====================================================
 
-elif analysis_category == "Quality Control":
+    elif analysis_category == "Quality Control":
 
-    st.subheader("Statistical Quality Control")
+        st.subheader("Statistical Quality Control")
 
-    var = st.selectbox("Process Variable", numeric_cols)
+        method = st.selectbox(
+            "Method",
+            ["Control Chart","Process Capability"]
+        )
 
-    data = df[var]
+        var = st.selectbox("Process Variable", numeric_cols)
 
-    if method == "Control Chart (X-bar)":
+        data = df[var]
 
-        mean = np.mean(data)
-        std = np.std(data)
+        if method == "Control Chart":
 
-        UCL = mean + 3*std
-        LCL = mean - 3*std
+            mean = np.mean(data)
+            std = np.std(data)
 
-        fig, ax = plt.subplots()
+            UCL = mean + 3*std
+            LCL = mean - 3*std
 
-        ax.plot(data,marker="o")
-        ax.axhline(mean,label="Mean")
-        ax.axhline(UCL,color="red",label="UCL")
-        ax.axhline(LCL,color="red",label="LCL")
+            fig, ax = plt.subplots()
 
-        ax.legend()
+            ax.plot(data,marker="o")
+            ax.axhline(mean,label="Mean")
+            ax.axhline(UCL,color="red",label="UCL")
+            ax.axhline(LCL,color="red",label="LCL")
 
-        st.pyplot(fig)
+            ax.legend()
 
-        st.write("Interpretation")
+            st.pyplot(fig)
 
-        if any(data > UCL) or any(data < LCL):
+        elif method == "Process Capability":
 
-            st.write("Process may be out of control.")
+            LSL = st.number_input("Lower Spec Limit")
+            USL = st.number_input("Upper Spec Limit")
 
-        else:
+            mean = np.mean(data)
+            std = np.std(data)
 
-            st.write("Process appears to be in statistical control.")
+            Cp = (USL-LSL)/(6*std)
 
+            st.write("Cp:",Cp)
 
-    elif method == "Process Capability":
+else:
 
-        LSL = st.number_input("Lower Specification Limit")
-        USL = st.number_input("Upper Specification Limit")
-
-        mean = np.mean(data)
-        std = np.std(data)
-
-        Cp = (USL-LSL)/(6*std)
-
-        st.write("Process Capability Cp:",Cp)
-
-        if Cp > 1.33:
-            st.write("Process capability is good.")
-
-        elif Cp > 1:
-            st.write("Process capability is acceptable.")
-
-        else:
-            st.write("Process capability is poor.")
-
-
+    st.info("Upload a dataset to begin analysis.")
+```
