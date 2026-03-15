@@ -297,33 +297,55 @@ if df is not None:
             "Chemoinformatics"
         ]
     )
-# =====================================================
-# DESCRIPTIVE STATISTICS
-# =====================================================
+elif analysis_category == "Descriptive Statistics":
 
-    if analysis_category == "Descriptive Statistics":
+    st.subheader("📑 Descriptive Statistics")
 
-        st.subheader("📑 Descriptive Statistics")
+    if df is None:
+        st.warning("Please upload a dataset first.")
+        st.stop()
 
-        var = st.selectbox("Select Variable", numeric_cols)
+    if len(numeric_cols) == 0:
+        st.warning("No numeric variables available.")
+        st.stop()
 
-        data = df[var].dropna()
+    var = st.selectbox("Select Variable", numeric_cols)
 
-        summary = pd.DataFrame({
-            "Mean":[np.mean(data)],
-            "Median":[np.median(data)],
-            "Std Dev":[np.std(data)],
-            "Variance":[np.var(data)],
-            "Min":[np.min(data)],
-            "Max":[np.max(data)],
-            "Skewness":[stats.skew(data)],
-            "Kurtosis":[stats.kurtosis(data)]
-        })
+    data = df[var].dropna()
 
-        st.table(summary)
+    if len(data) < 2:
+        st.warning("Not enough observations.")
+        st.stop()
 
+    summary = pd.DataFrame({
+        "Statistic":[
+            "Sample Size",
+            "Mean",
+            "Median",
+            "Standard Deviation",
+            "Variance",
+            "Minimum",
+            "Maximum",
+            "Skewness",
+            "Kurtosis"
+        ],
+        "Value":[
+            len(data),
+            np.mean(data),
+            np.median(data),
+            np.std(data,ddof=1),
+            np.var(data,ddof=1),
+            np.min(data),
+            np.max(data),
+            stats.skew(data),
+            stats.kurtosis(data)
+        ]
+    })
 
-elif analysis_category == "Graphics":
+    summary["Value"] = summary["Value"].round(4)
+
+    st.dataframe(summary, use_container_width=True)
+    elif analysis_category == "Graphics":
 
     st.subheader("📊 Data Visualization")
 
@@ -354,8 +376,12 @@ elif analysis_category == "Graphics":
         var = st.selectbox("Variable", numeric_cols)
 
         fig, ax = plt.subplots()
+
         sns.histplot(df[var].dropna(), kde=True, ax=ax)
+
         ax.set_title(f"Histogram of {var}")
+        ax.set_xlabel(var)
+        ax.set_ylabel("Frequency")
 
         st.pyplot(fig)
 
@@ -365,13 +391,10 @@ elif analysis_category == "Graphics":
 
     elif plot == "Boxplot":
 
-        if len(numeric_cols) == 0:
-            st.warning("No numeric variables available.")
-            st.stop()
-
         var = st.selectbox("Variable", numeric_cols)
 
         fig, ax = plt.subplots()
+
         sns.boxplot(y=df[var], ax=ax)
 
         ax.set_title(f"Boxplot of {var}")
@@ -385,7 +408,7 @@ elif analysis_category == "Graphics":
     elif plot == "Scatter Plot":
 
         if len(numeric_cols) < 2:
-            st.warning("At least two numeric variables are required.")
+            st.warning("At least two numeric variables required.")
             st.stop()
 
         x = st.selectbox("X Variable", numeric_cols)
@@ -413,13 +436,18 @@ elif analysis_category == "Graphics":
 
         fig, ax = plt.subplots()
 
-        sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
+        sns.heatmap(
+            corr,
+            annot=True,
+            cmap="coolwarm",
+            fmt=".2f",
+            ax=ax
+        )
 
         ax.set_title("Correlation Matrix")
 
         st.pyplot(fig)
-
-elif analysis_category == "Hypothesis Testing":
+        elif analysis_category == "Hypothesis Testing":
 
     st.subheader("📊 Hypothesis Testing")
 
@@ -434,29 +462,18 @@ elif analysis_category == "Hypothesis Testing":
             "Two-Sample t-Test (Independent)",
             "Paired t-Test",
             "Z-Test (Large Sample Mean)",
-            "Proportion Test",
-            "Chi-Square Test (Independence)",
-            "Chi-Square Goodness-of-Fit",
-            "ANOVA (One-Way)"
+            "Proportion Test"
         ]
     )
 
     alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
 
-# -----------------------------------------------------
-# ONE SAMPLE T TEST
-# -----------------------------------------------------
-
     if test == "One-Sample t-Test":
-
-        if len(numeric_cols) == 0:
-            st.warning("No numeric variables available.")
-            st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
         mu = st.number_input("Hypothesized Mean (μ₀)",0.0)
 
-        if st.button("Run Test"):
+        if st.button("Run One Sample t-Test"):
 
             data = df[var].dropna()
 
@@ -467,123 +484,10 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:", round(p,4))
 
             if p < alpha:
-                st.success("Reject H₀: Population mean differs significantly.")
+                st.success("Reject H₀")
             else:
-                st.info("Fail to reject H₀.")
-
-# -----------------------------------------------------
-# TWO SAMPLE T TEST
-# -----------------------------------------------------
-
-    elif test == "Two-Sample t-Test (Independent)":
-
-        var = st.selectbox("Numeric Variable", numeric_cols)
-        group = st.selectbox("Grouping Variable", categorical_cols)
-
-        groups = df[group].dropna().unique()
-
-        g1 = st.selectbox("Group 1", groups)
-        g2 = st.selectbox("Group 2", groups)
-
-        equal_var = st.checkbox("Assume Equal Variances",True)
-
-        if st.button("Run Test"):
-
-            d1 = df[df[group]==g1][var].dropna()
-            d2 = df[df[group]==g2][var].dropna()
-
-            stat,p = stats.ttest_ind(d1,d2,equal_var=equal_var)
-
-            st.write("Mean (Group1):", round(np.mean(d1),4))
-            st.write("Mean (Group2):", round(np.mean(d2),4))
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀: Group means differ significantly.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# -----------------------------------------------------
-# PAIRED T TEST
-# -----------------------------------------------------
-
-    elif test == "Paired t-Test":
-
-        v1 = st.selectbox("Variable 1", numeric_cols)
-        v2 = st.selectbox("Variable 2", numeric_cols)
-
-        if st.button("Run Test"):
-
-            data = df[[v1,v2]].dropna()
-
-            stat,p = stats.ttest_rel(data[v1],data[v2])
-
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# -----------------------------------------------------
-# Z TEST
-# -----------------------------------------------------
-
-    elif test == "Z-Test (Large Sample Mean)":
-
-        var = st.selectbox("Variable", numeric_cols)
-        mu = st.number_input("Hypothesized Mean",0.0)
-
-        if st.button("Run Test"):
-
-            data = df[var].dropna()
-
-            n = len(data)
-            mean = np.mean(data)
-            std = np.std(data,ddof=1)
-
-            z = (mean-mu)/(std/np.sqrt(n))
-
-            p = 2*(1-stats.norm.cdf(abs(z)))
-
-            st.write("Z statistic:",round(z,4))
-            st.write("p-value:",round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# -----------------------------------------------------
-# PROPORTION TEST
-# -----------------------------------------------------
-
-    elif test == "Proportion Test":
-
-        successes = st.number_input("Number of Successes",0)
-        n = st.number_input("Sample Size",1)
-        p0 = st.number_input("Hypothesized Proportion",0.5)
-
-        if st.button("Run Test"):
-
-            phat = successes/n
-
-            z = (phat-p0)/np.sqrt((p0*(1-p0))/n)
-
-            p = 2*(1-stats.norm.cdf(abs(z)))
-
-            st.write("Sample Proportion:",round(phat,4))
-            st.write("Z statistic:",round(z,4))
-            st.write("p-value:",round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀.")
-            else:
-                st.info("Fail to reject H₀.")
-
-    elif analysis_category == "Estimation":
+                st.info("Fail to reject H₀")
+                elif analysis_category == "Estimation":
 
     st.subheader("📐 Statistical Estimation")
 
@@ -596,10 +500,7 @@ elif analysis_category == "Hypothesis Testing":
         [
             "Point Estimation",
             "Confidence Interval for Mean (t)",
-            "Confidence Interval for Mean (z)",
-            "Confidence Interval for Proportion",
-            "Confidence Interval for Variance",
-            "Confidence Interval for Difference of Means"
+            "Confidence Interval for Proportion"
         ]
     )
 
@@ -611,7 +512,7 @@ elif analysis_category == "Hypothesis Testing":
 
         var = st.selectbox("Variable", numeric_cols)
 
-        if st.button("Compute Estimates"):
+        if st.button("Compute Point Estimates"):
 
             data = df[var].dropna()
 
@@ -621,7 +522,7 @@ elif analysis_category == "Hypothesis Testing":
             st.metric("Sample Std Dev", round(np.std(data,ddof=1),4))
 
 # -----------------------------------------------------
-# CONFIDENCE INTERVAL FOR MEAN (t)
+# CI FOR MEAN
 # -----------------------------------------------------
 
     elif method == "Confidence Interval for Mean (t)":
@@ -629,7 +530,7 @@ elif analysis_category == "Hypothesis Testing":
         var = st.selectbox("Variable", numeric_cols)
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute CI"):
+        if st.button("Compute Mean CI"):
 
             data = df[var].dropna()
 
@@ -647,7 +548,7 @@ elif analysis_category == "Hypothesis Testing":
             st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
 
 # -----------------------------------------------------
-# CONFIDENCE INTERVAL FOR PROPORTION
+# CI FOR PROPORTION
 # -----------------------------------------------------
 
     elif method == "Confidence Interval for Proportion":
@@ -657,7 +558,7 @@ elif analysis_category == "Hypothesis Testing":
 
         conf=st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute CI"):
+        if st.button("Compute Proportion CI"):
 
             p=successes/n
 
@@ -669,7 +570,6 @@ elif analysis_category == "Hypothesis Testing":
             upper=p+margin
 
             st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
-
     
 # =====================================================
 # REGRESSION
