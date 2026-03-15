@@ -894,6 +894,10 @@ if df is not None:
 
         data = df[var].dropna()
 
+        if len(data) < 10:
+            st.warning("Time series analysis requires at least 10 observations.")
+            st.stop()
+
 # =====================================================
 # TIME SERIES PLOT
 # =====================================================
@@ -902,16 +906,16 @@ if df is not None:
 
             fig, ax = plt.subplots()
 
-            ax.plot(data)
+            ax.plot(data, color="blue")
 
             ax.set_title("Time Series Plot")
-            ax.set_xlabel("Time")
+            ax.set_xlabel("Observation")
             ax.set_ylabel(var)
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: This plot shows how the variable evolves over time."
+                "Interpretation: Displays how the variable changes over time."
             )
 
 # =====================================================
@@ -920,24 +924,22 @@ if df is not None:
 
         elif method == "Moving Average":
 
-            window = st.slider("Window Size",2,30,5)
+            window = st.slider("Window Size", 2, 30, 5)
 
             ma = data.rolling(window).mean()
 
             fig, ax = plt.subplots()
 
-            ax.plot(data,label="Original Data")
-            ax.plot(ma,label="Moving Average")
+            ax.plot(data, label="Original", color="blue")
+            ax.plot(ma, label="Moving Average", color="red")
 
             ax.legend()
-
             ax.set_title("Moving Average Smoothing")
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: Moving averages smooth short-term fluctuations "
-                "to highlight long-term trends."
+                "Interpretation: Moving averages smooth short-term fluctuations and highlight long-term trends."
             )
 
 # =====================================================
@@ -948,24 +950,22 @@ if df is not None:
 
             x = np.arange(len(data))
 
-            slope, intercept = np.polyfit(x,data,1)
+            slope, intercept = np.polyfit(x, data, 1)
 
-            trend = slope*x + intercept
+            trend = slope * x + intercept
 
             fig, ax = plt.subplots()
 
-            ax.plot(data,label="Observed")
-            ax.plot(trend,label="Trend Line")
+            ax.plot(data, label="Observed", color="blue")
+            ax.plot(trend, label="Trend Line", color="red")
 
             ax.legend()
-
             ax.set_title("Trend Estimation")
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: The trend line shows the long-term direction "
-                "of the time series."
+                "Interpretation: The trend line represents the long-term movement of the series."
             )
 
 # =====================================================
@@ -974,29 +974,34 @@ if df is not None:
 
         elif method == "Stationarity Test (ADF)":
 
-            result = adfuller(data)
+            try:
 
-            stat = result[0]
-            p = result[1]
+                result = adfuller(data)
 
-            st.metric("ADF Statistic", round(stat,4))
-            st.metric("p-value", round(p,4))
+                stat = result[0]
+                p = result[1]
 
-            st.markdown("### Critical Values")
+                col1, col2 = st.columns(2)
 
-            for key,value in result[4].items():
-                st.write(f"{key}: {round(value,4)}")
+                col1.metric("ADF Statistic", round(stat,4))
+                col2.metric("p-value", round(p,4))
 
-            if p < 0.05:
-                st.success(
-                    "Interpretation: The series is stationary "
-                    "(reject null hypothesis of unit root)."
-                )
-            else:
-                st.warning(
-                    "Interpretation: The series is non-stationary. "
-                    "Differencing may be required."
-                )
+                st.markdown("### Critical Values")
+
+                for key,value in result[4].items():
+                    st.write(f"{key}: {round(value,4)}")
+
+                if p < 0.05:
+                    st.success(
+                        "Interpretation: The time series is **stationary** (reject the null hypothesis of a unit root)."
+                    )
+                else:
+                    st.warning(
+                        "Interpretation: The time series is **non-stationary**. Differencing may be required."
+                    )
+
+            except:
+                st.error("ADF test could not be computed for this series.")
 
 # =====================================================
 # DIFFERENCING
@@ -1006,19 +1011,18 @@ if df is not None:
 
             lag = st.slider("Lag",1,10,1)
 
-            diff = data.diff(lag)
+            diff = data.diff(lag).dropna()
 
             fig, ax = plt.subplots()
 
-            ax.plot(diff)
+            ax.plot(diff, color="purple")
 
             ax.set_title("Differenced Series")
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: Differencing removes trends and helps "
-                "stabilize the mean of the time series."
+                "Interpretation: Differencing removes trends and stabilizes the mean of the time series."
             )
 
 # =====================================================
@@ -1029,13 +1033,14 @@ if df is not None:
 
             fig, ax = plt.subplots()
 
-            plot_acf(data,ax=ax)
+            plot_acf(data, ax=ax)
+
+            ax.set_title("Autocorrelation Function")
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: ACF shows correlation between "
-                "observations at different time lags."
+                "Interpretation: ACF measures correlation between observations and their lagged values."
             )
 
 # =====================================================
@@ -1046,13 +1051,16 @@ if df is not None:
 
             fig, ax = plt.subplots()
 
-            plot_pacf(data,ax=ax)
+            max_lag = min(20, len(data)//2)
+
+            plot_pacf(data, ax=ax, lags=max_lag)
+
+            ax.set_title("Partial Autocorrelation Function")
 
             st.pyplot(fig)
 
             st.info(
-                "Interpretation: PACF identifies the direct relationship "
-                "between observations at different lags."
+                "Interpretation: PACF shows the direct effect of past observations after removing intermediate lag effects."
             )
 
 # =====================================================
@@ -1063,17 +1071,23 @@ if df is not None:
 
             period = st.slider("Seasonal Period",2,24,12)
 
-            decomposition = seasonal_decompose(data,period=period)
+            if len(data) < period*2:
 
-            fig = decomposition.plot()
+                st.warning("Dataset must contain at least two seasonal cycles.")
 
-            st.pyplot(fig)
+            else:
 
-            st.info(
-                "Interpretation: Decomposition separates the series into "
-                "trend, seasonal, and residual components."
-            )
-            
+                decomposition = seasonal_decompose(data, period=period)
+
+                fig = decomposition.plot()
+
+                st.pyplot(fig)
+
+                st.info(
+                    "Interpretation: Decomposition separates the series into **trend**, **seasonal**, and **residual** components."
+                )
+
+    
 # =====================================================
 # QUALITY CONTROL
 # =====================================================
