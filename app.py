@@ -375,9 +375,17 @@ if df is not None:
 
             st.pyplot(fig)
 
+# =====================================================
+# HYPOTHESIS TESTING
+# =====================================================
+
 elif analysis_category == "Hypothesis Testing":
 
     st.subheader("📊 Hypothesis Testing")
+
+    if df is None:
+        st.warning("Please upload a dataset first.")
+        st.stop()
 
     test = st.selectbox(
         "Select Statistical Test",
@@ -401,12 +409,20 @@ elif analysis_category == "Hypothesis Testing":
 
     if test == "One-Sample t-Test":
 
+        if len(numeric_cols) == 0:
+            st.warning("No numeric variables available.")
+            st.stop()
+
         var = st.selectbox("Variable", numeric_cols)
         mu = st.number_input("Hypothesized Mean (μ₀)",0.0)
 
         if st.button("Run Test"):
 
             data = df[var].dropna()
+
+            if len(data) < 3:
+                st.error("Sample size must be at least 3.")
+                st.stop()
 
             stat,p = stats.ttest_1samp(data,mu)
 
@@ -417,12 +433,9 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:", round(p,4))
 
             if p < alpha:
-
-                st.success("Reject H₀: The population mean differs significantly from the hypothesized mean.")
-
+                st.success("Reject H₀: Population mean differs significantly.")
             else:
-
-                st.info("Fail to reject H₀: No significant evidence that the population mean differs.")
+                st.info("Fail to reject H₀: No significant difference detected.")
 
 # -----------------------------------------------------
 # TWO SAMPLE T TEST
@@ -430,10 +443,22 @@ elif analysis_category == "Hypothesis Testing":
 
     elif test == "Two-Sample t-Test (Independent)":
 
+        if len(numeric_cols) == 0 or len(categorical_cols) == 0:
+            st.warning("Dataset must contain numeric and categorical variables.")
+            st.stop()
+
         var = st.selectbox("Numeric Variable", numeric_cols)
         group = st.selectbox("Grouping Variable", categorical_cols)
 
+        if group not in df.columns:
+            st.error("Selected grouping variable not found.")
+            st.stop()
+
         groups = df[group].dropna().unique()
+
+        if len(groups) < 2:
+            st.warning("Grouping variable must contain at least 2 groups.")
+            st.stop()
 
         g1 = st.selectbox("Group 1", groups)
         g2 = st.selectbox("Group 2", groups)
@@ -445,6 +470,10 @@ elif analysis_category == "Hypothesis Testing":
             d1 = df[df[group]==g1][var].dropna()
             d2 = df[df[group]==g2][var].dropna()
 
+            if len(d1) < 2 or len(d2) < 2:
+                st.error("Each group must contain at least 2 observations.")
+                st.stop()
+
             stat,p = stats.ttest_ind(d1,d2,equal_var=equal_var)
 
             st.write("Mean (Group1):", round(np.mean(d1),4))
@@ -453,18 +482,19 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:", round(p,4))
 
             if p < alpha:
-
-                st.success("Reject H₀: The two group means differ significantly.")
-
+                st.success("Reject H₀: Group means differ significantly.")
             else:
-
-                st.info("Fail to reject H₀: No significant difference between group means.")
+                st.info("Fail to reject H₀: No significant difference between groups.")
 
 # -----------------------------------------------------
 # PAIRED T TEST
 # -----------------------------------------------------
 
     elif test == "Paired t-Test":
+
+        if len(numeric_cols) < 2:
+            st.warning("At least two numeric variables required.")
+            st.stop()
 
         v1 = st.selectbox("Variable 1 (Before)", numeric_cols)
         v2 = st.selectbox("Variable 2 (After)", numeric_cols)
@@ -473,17 +503,18 @@ elif analysis_category == "Hypothesis Testing":
 
             data = df[[v1,v2]].dropna()
 
+            if len(data) < 3:
+                st.error("Paired sample size must be at least 3.")
+                st.stop()
+
             stat,p = stats.ttest_rel(data[v1],data[v2])
 
             st.write("t statistic:", round(stat,4))
             st.write("p-value:", round(p,4))
 
             if p < alpha:
-
                 st.success("Reject H₀: Significant difference between paired observations.")
-
             else:
-
                 st.info("Fail to reject H₀: No significant change detected.")
 
 # -----------------------------------------------------
@@ -492,6 +523,10 @@ elif analysis_category == "Hypothesis Testing":
 
     elif test == "Z-Test (Large Sample Mean)":
 
+        if len(numeric_cols) == 0:
+            st.warning("No numeric variables available.")
+            st.stop()
+
         var = st.selectbox("Variable", numeric_cols)
         mu = st.number_input("Hypothesized Mean",0.0)
 
@@ -499,23 +534,24 @@ elif analysis_category == "Hypothesis Testing":
 
             data = df[var].dropna()
 
-            mean = np.mean(data)
-            std = np.std(data)
             n = len(data)
 
-            z = (mean - mu)/(std/np.sqrt(n))
+            if n < 30:
+                st.warning("Z-test recommended for large samples (n ≥ 30).")
+
+            mean = np.mean(data)
+            std = np.std(data,ddof=1)
+
+            z = (mean-mu)/(std/np.sqrt(n))
 
             p = 2*(1-stats.norm.cdf(abs(z)))
 
-            st.write("Z statistic:", round(z,4))
-            st.write("p-value:", round(p,4))
+            st.write("Z statistic:",round(z,4))
+            st.write("p-value:",round(p,4))
 
             if p < alpha:
-
-                st.success("Reject H₀: Population mean significantly differs.")
-
+                st.success("Reject H₀.")
             else:
-
                 st.info("Fail to reject H₀.")
 
 # -----------------------------------------------------
@@ -541,11 +577,8 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:",round(p,4))
 
             if p < alpha:
-
                 st.success("Reject H₀: Population proportion differs.")
-
             else:
-
                 st.info("Fail to reject H₀.")
 
 # -----------------------------------------------------
@@ -553,6 +586,10 @@ elif analysis_category == "Hypothesis Testing":
 # -----------------------------------------------------
 
     elif test == "Chi-Square Test (Independence)":
+
+        if len(categorical_cols) < 2:
+            st.warning("Dataset must contain at least two categorical variables.")
+            st.stop()
 
         v1 = st.selectbox("Variable 1", categorical_cols)
         v2 = st.selectbox("Variable 2", categorical_cols)
@@ -570,12 +607,36 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:",round(p,4))
 
             if p < alpha:
-
                 st.success("Reject H₀: Variables are statistically associated.")
-
             else:
-
                 st.info("Fail to reject H₀: Variables appear independent.")
+
+# -----------------------------------------------------
+# CHI SQUARE GOODNESS OF FIT
+# -----------------------------------------------------
+
+    elif test == "Chi-Square Goodness-of-Fit":
+
+        var = st.selectbox("Categorical Variable", categorical_cols)
+
+        if st.button("Run Test"):
+
+            observed = df[var].value_counts()
+
+            expected = np.repeat(observed.mean(),len(observed))
+
+            chi2,p = stats.chisquare(observed,expected)
+
+            st.write("Observed Frequencies")
+            st.write(observed)
+
+            st.write("Chi-square:",round(chi2,4))
+            st.write("p-value:",round(p,4))
+
+            if p < alpha:
+                st.success("Reject H₀: Observed distribution differs from expected.")
+            else:
+                st.info("Fail to reject H₀.")
 
 # -----------------------------------------------------
 # ANOVA
@@ -583,12 +644,22 @@ elif analysis_category == "Hypothesis Testing":
 
     elif test == "ANOVA (One-Way)":
 
+        if len(numeric_cols) == 0 or len(categorical_cols) == 0:
+            st.warning("Dataset must contain numeric and categorical variables.")
+            st.stop()
+
         var = st.selectbox("Numeric Variable", numeric_cols)
         group = st.selectbox("Factor Variable", categorical_cols)
 
         if st.button("Run Test"):
 
-            groups = [g[var].dropna().values for name,g in df.groupby(group)]
+            grouped = df.groupby(group)[var].apply(lambda x: x.dropna().values)
+
+            groups = list(grouped)
+
+            if len(groups) < 2:
+                st.error("At least two groups required for ANOVA.")
+                st.stop()
 
             stat,p = stats.f_oneway(*groups)
 
@@ -596,83 +667,152 @@ elif analysis_category == "Hypothesis Testing":
             st.write("p-value:",round(p,4))
 
             if p < alpha:
-
                 st.success("Reject H₀: At least one group mean differs.")
-
             else:
-
                 st.info("Fail to reject H₀: No significant difference detected.")
 
     elif analysis_category == "Estimation":
 
     st.subheader("📐 Statistical Estimation")
 
+    if df is None:
+        st.warning("Please upload a dataset first.")
+        st.stop()
+
     method = st.selectbox(
         "Estimation Method",
         [
-            "Point Estimation (Mean, Variance)",
-            "Confidence Interval for Mean",
+            "Point Estimation",
+            "Confidence Interval for Mean (t)",
+            "Confidence Interval for Mean (z)",
             "Confidence Interval for Proportion",
-            "Confidence Interval for Variance"
+            "Confidence Interval for Variance",
+            "Confidence Interval for Difference of Means"
         ]
     )
 
-# -----------------------------------------------------
+# =====================================================
 # POINT ESTIMATION
-# -----------------------------------------------------
+# =====================================================
 
-    if method == "Point Estimation (Mean, Variance)":
+    if method == "Point Estimation":
+
+        if len(numeric_cols) == 0:
+            st.warning("Dataset contains no numeric variables.")
+            st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
-        data = df[var].dropna()
+        if st.button("Estimate Parameters"):
 
-        mean = np.mean(data)
-        var_est = np.var(data)
-        std = np.std(data)
+            data = df[var].dropna()
 
-        st.metric("Sample Mean",round(mean,4))
-        st.metric("Sample Variance",round(var_est,4))
-        st.metric("Sample Standard Deviation",round(std,4))
+            n = len(data)
 
-        st.info(
-            "Interpretation: These statistics estimate the unknown population parameters "
-            "using observed sample data."
-        )
+            if n < 2:
+                st.error("Sample size must be at least 2.")
+                st.stop()
 
-# -----------------------------------------------------
-# CI MEAN
-# -----------------------------------------------------
+            mean = np.mean(data)
+            var_est = np.var(data,ddof=1)
+            std = np.std(data,ddof=1)
 
-    elif method == "Confidence Interval for Mean":
+            st.metric("Sample Size", n)
+            st.metric("Sample Mean", round(mean,4))
+            st.metric("Sample Variance", round(var_est,4))
+            st.metric("Sample Standard Deviation", round(std,4))
+
+            st.info(
+                "Interpretation: These statistics serve as point estimates of the unknown "
+                "population parameters based on the observed sample."
+            )
+
+# =====================================================
+# CONFIDENCE INTERVAL FOR MEAN (t)
+# =====================================================
+
+    elif method == "Confidence Interval for Mean (t)":
+
+        if len(numeric_cols) == 0:
+            st.warning("Dataset contains no numeric variables.")
+            st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        data = df[var].dropna()
+        if st.button("Compute Confidence Interval"):
 
-        mean = np.mean(data)
-        std = np.std(data)
-        n = len(data)
+            data = df[var].dropna()
 
-        t = stats.t.ppf((1+conf)/2,n-1)
+            n = len(data)
 
-        margin = t*(std/np.sqrt(n))
+            if n < 3:
+                st.error("Sample size must be at least 3.")
+                st.stop()
 
-        lower = mean - margin
-        upper = mean + margin
+            mean = np.mean(data)
+            std = np.std(data,ddof=1)
 
-        st.write("Mean:",round(mean,4))
-        st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            t_value = stats.t.ppf((1+conf)/2,n-1)
 
-        st.success(
-            f"We are {int(conf*100)}% confident that the true population mean lies within this interval."
-        )
+            margin = t_value*(std/np.sqrt(n))
 
-# -----------------------------------------------------
-# CI PROPORTION
-# -----------------------------------------------------
+            lower = mean-margin
+            upper = mean+margin
+
+            st.write("Sample Mean:",round(mean,4))
+            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+
+            st.success(
+                f"We are {int(conf*100)}% confident that the population mean lies between "
+                f"{round(lower,4)} and {round(upper,4)}."
+            )
+
+# =====================================================
+# CONFIDENCE INTERVAL FOR MEAN (Z)
+# =====================================================
+
+    elif method == "Confidence Interval for Mean (z)":
+
+        if len(numeric_cols) == 0:
+            st.warning("Dataset contains no numeric variables.")
+            st.stop()
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        conf = st.slider("Confidence Level",0.80,0.99,0.95)
+
+        if st.button("Compute Confidence Interval"):
+
+            data = df[var].dropna()
+
+            n = len(data)
+
+            if n < 30:
+                st.warning("Z interval is typically recommended for large samples (n ≥ 30).")
+
+            mean = np.mean(data)
+            std = np.std(data,ddof=1)
+
+            z = stats.norm.ppf((1+conf)/2)
+
+            margin = z*(std/np.sqrt(n))
+
+            lower = mean-margin
+            upper = mean+margin
+
+            st.write("Sample Mean:",round(mean,4))
+            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+
+            st.info(
+                f"Interpretation: With {int(conf*100)}% confidence, the true population mean "
+                "is contained in this interval."
+            )
+
+# =====================================================
+# CONFIDENCE INTERVAL FOR PROPORTION
+# =====================================================
 
     elif method == "Confidence Interval for Proportion":
 
@@ -681,50 +821,131 @@ elif analysis_category == "Hypothesis Testing":
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        p = successes/n
+        if st.button("Compute Confidence Interval"):
 
-        z = stats.norm.ppf((1+conf)/2)
+            if n <= 0:
+                st.error("Sample size must be greater than zero.")
+                st.stop()
 
-        margin = z*np.sqrt((p*(1-p))/n)
+            p = successes/n
 
-        lower = p-margin
-        upper = p+margin
+            z = stats.norm.ppf((1+conf)/2)
 
-        st.write("Sample Proportion:",round(p,4))
-        st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            margin = z*np.sqrt((p*(1-p))/n)
 
-        st.info(
-            f"Interpretation: With {int(conf*100)}% confidence, the population proportion lies within this interval."
-        )
+            lower = p-margin
+            upper = p+margin
 
-# -----------------------------------------------------
-# CI VARIANCE
-# -----------------------------------------------------
+            st.write("Sample Proportion:",round(p,4))
+            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+
+            st.success(
+                f"We are {int(conf*100)}% confident that the population proportion "
+                f"lies between {round(lower,4)} and {round(upper,4)}."
+            )
+
+# =====================================================
+# CONFIDENCE INTERVAL FOR VARIANCE
+# =====================================================
 
     elif method == "Confidence Interval for Variance":
+
+        if len(numeric_cols) == 0:
+            st.warning("Dataset contains no numeric variables.")
+            st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        data = df[var].dropna()
+        if st.button("Compute Confidence Interval"):
 
-        n = len(data)
-        s2 = np.var(data,ddof=1)
+            data = df[var].dropna()
 
-        chi1 = stats.chi2.ppf((1-conf)/2,n-1)
-        chi2 = stats.chi2.ppf((1+conf)/2,n-1)
+            n = len(data)
 
-        lower = (n-1)*s2/chi2
-        upper = (n-1)*s2/chi1
+            if n < 3:
+                st.error("Sample size must be at least 3.")
+                st.stop()
 
-        st.write("Sample Variance:",round(s2,4))
-        st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            s2 = np.var(data,ddof=1)
 
-        st.info(
-            f"Interpretation: With {int(conf*100)}% confidence, the population variance lies in this interval."
-        )
+            chi1 = stats.chi2.ppf((1-conf)/2,n-1)
+            chi2 = stats.chi2.ppf((1+conf)/2,n-1)
 
+            lower = (n-1)*s2/chi2
+            upper = (n-1)*s2/chi1
+
+            st.write("Sample Variance:",round(s2,4))
+            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+
+            st.info(
+                f"Interpretation: With {int(conf*100)}% confidence, the population variance "
+                "lies within this interval."
+            )
+
+# =====================================================
+# CONFIDENCE INTERVAL FOR DIFFERENCE OF MEANS
+# =====================================================
+
+    elif method == "Confidence Interval for Difference of Means":
+
+        if len(numeric_cols) == 0 or len(categorical_cols) == 0:
+            st.warning("Dataset must contain numeric and categorical variables.")
+            st.stop()
+
+        var = st.selectbox("Numeric Variable", numeric_cols)
+        group = st.selectbox("Grouping Variable", categorical_cols)
+
+        conf = st.slider("Confidence Level",0.80,0.99,0.95)
+
+        groups = df[group].dropna().unique()
+
+        if len(groups) < 2:
+            st.warning("Grouping variable must contain at least two groups.")
+            st.stop()
+
+        g1 = st.selectbox("Group 1",groups)
+        g2 = st.selectbox("Group 2",groups)
+
+        if st.button("Compute Confidence Interval"):
+
+            d1 = df[df[group]==g1][var].dropna()
+            d2 = df[df[group]==g2][var].dropna()
+
+            n1 = len(d1)
+            n2 = len(d2)
+
+            if n1 < 2 or n2 < 2:
+                st.error("Each group must contain at least two observations.")
+                st.stop()
+
+            mean1 = np.mean(d1)
+            mean2 = np.mean(d2)
+
+            s1 = np.var(d1,ddof=1)
+            s2 = np.var(d2,ddof=1)
+
+            se = np.sqrt(s1/n1 + s2/n2)
+
+            dfree = min(n1-1,n2-1)
+
+            t = stats.t.ppf((1+conf)/2,dfree)
+
+            diff = mean1-mean2
+
+            margin = t*se
+
+            lower = diff-margin
+            upper = diff+margin
+
+            st.write("Mean Difference:",round(diff,4))
+            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+
+            st.success(
+                f"With {int(conf*100)}% confidence, the true difference in population means "
+                f"lies between {round(lower,4)} and {round(upper,4)}."
+            )
 
 
 # =====================================================
