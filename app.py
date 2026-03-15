@@ -489,207 +489,133 @@ elif analysis_category == "Graphics":
         st.pyplot(fig)
 
 # =====================================================
-# HYPOTHESIS TESTING & ESTIMATION
+# HYPOTHESIS TESTING (BASIC)
 # =====================================================
 
-elif analysis_category == "Hypothesis Testing & Estimation":
+elif analysis_category == "Hypothesis Testing":
 
-    st.subheader("📊 Hypothesis Testing & Estimation")
+    st.subheader("📊 Hypothesis Testing")
 
-    analysis = st.selectbox(
-        "Analysis Type",
+    test = st.selectbox(
+        "Select Test",
         [
-            "Estimation",
-            "Mean Tests",
-            "Proportion Test",
-            "Categorical Association",
-            "ANOVA"
+            "One-Sample t-Test",
+            "Two-Sample t-Test",
+            "Paired t-Test",
+            "Chi-Square Test",
+            "One-Way ANOVA"
         ]
     )
 
-# =====================================================
-# ESTIMATION
-# =====================================================
-
-    if analysis == "Estimation":
-
-        method = st.selectbox(
-            "Estimation Method",
-            [
-                "Mean Confidence Interval",
-                "Proportion Confidence Interval"
-            ]
-        )
-
-        if method == "Mean Confidence Interval":
-
-            var = st.selectbox("Variable", numeric_cols)
-            conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
-            if st.button("Run Estimation"):
-
-                data = df[var].dropna()
-
-                mean = np.mean(data)
-                sem = stats.sem(data)
-
-                ci = stats.t.interval(conf, len(data)-1, loc=mean, scale=sem)
-
-                st.write("Sample Mean:", round(mean,4))
-                st.write("Confidence Interval:", ci)
-
-                st.info("Interpretation: The population mean is likely within this interval.")
-
-        elif method == "Proportion Confidence Interval":
-
-            successes = st.number_input("Successes",10)
-            n = st.number_input("Sample Size",50)
-            conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
-            if st.button("Run Estimation"):
-
-                p = successes/n
-                z = stats.norm.ppf(1-(1-conf)/2)
-                se = np.sqrt(p*(1-p)/n)
-
-                lower = p - z*se
-                upper = p + z*se
-
-                st.write("Estimated Proportion:", round(p,4))
-                st.write("Confidence Interval:", (lower,upper))
+    alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
 
 # =====================================================
-# MEAN TESTS
+# ONE SAMPLE T TEST
 # =====================================================
 
-    elif analysis == "Mean Tests":
+    if test == "One-Sample t-Test":
 
-        method = st.selectbox(
-            "Test",
-            [
-                "One-Sample t-Test",
-                "Two-Sample t-Test",
-                "Paired t-Test"
-            ]
-        )
-
-        alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
-
-        if method == "One-Sample t-Test":
-
-            var = st.selectbox("Variable", numeric_cols)
-            mu = st.number_input("Hypothesized Mean",0.0)
-
-            if st.button("Run Test"):
-
-                data = df[var].dropna()
-                stat,p = stats.ttest_1samp(data,mu)
-
-                st.write("t statistic:",stat)
-                st.write("p-value:",p)
-
-                if p < alpha:
-                    st.success("Reject H₀: Mean differs from hypothesized value.")
-                else:
-                    st.info("Fail to reject H₀.")
-
-        elif method == "Two-Sample t-Test":
-
-            var = st.selectbox("Numeric Variable", numeric_cols)
-            cat_cols = df.select_dtypes(include=["object","category"]).columns
-            group = st.selectbox("Group Variable", cat_cols)
-
-            groups = df[group].unique()
-
-            g1 = st.selectbox("Group 1", groups)
-            g2 = st.selectbox("Group 2", groups)
-
-            if st.button("Run Test"):
-
-                d1 = df[df[group]==g1][var].dropna()
-                d2 = df[df[group]==g2][var].dropna()
-
-                stat,p = stats.ttest_ind(d1,d2)
-
-                st.write("t statistic:",stat)
-                st.write("p-value:",p)
-
-                if p < alpha:
-                    st.success("Reject H₀: Means differ.")
-                else:
-                    st.info("Fail to reject H₀.")
-
-        elif method == "Paired t-Test":
-
-            v1 = st.selectbox("Variable 1", numeric_cols)
-            v2 = st.selectbox("Variable 2", numeric_cols)
-
-            if st.button("Run Test"):
-
-                stat,p = stats.ttest_rel(df[v1],df[v2])
-
-                st.write("t statistic:",stat)
-                st.write("p-value:",p)
-
-                if p < alpha:
-                    st.success("Reject H₀: Paired means differ.")
-                else:
-                    st.info("Fail to reject H₀.")
-
-# =====================================================
-# PROPORTION TEST
-# =====================================================
-
-    elif analysis == "Proportion Test":
-
-        successes = st.number_input("Successes",10)
-        n = st.number_input("Sample Size",50)
-        p0 = st.number_input("Hypothesized Proportion",0.5)
-        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+        var = st.selectbox("Variable", numeric_cols)
+        mu = st.number_input("Hypothesized Mean", value=0.0)
 
         if st.button("Run Test"):
 
-            p = stats.binom_test(successes,n,p0)
+            data = df[var].dropna()
 
-            st.write("p-value:",p)
+            stat, p = stats.ttest_1samp(data, mu)
+
+            st.write("t statistic:", round(stat,4))
+            st.write("p-value:", round(p,4))
 
             if p < alpha:
-                st.success("Reject H₀: Proportion differs.")
+                st.success("Reject H₀: Mean differs from hypothesized value.")
             else:
                 st.info("Fail to reject H₀.")
 
 # =====================================================
-# CATEGORICAL ASSOCIATION
+# TWO SAMPLE T TEST
 # =====================================================
 
-    elif analysis == "Categorical Association":
+    elif test == "Two-Sample t-Test":
+
+        var = st.selectbox("Numeric Variable", numeric_cols)
 
         cat_cols = df.select_dtypes(include=["object","category"]).columns
+        group = st.selectbox("Group Variable", cat_cols)
 
-        v1 = st.selectbox("Variable 1",cat_cols)
-        v2 = st.selectbox("Variable 2",cat_cols)
+        groups = df[group].unique()
+
+        g1 = st.selectbox("Group 1", groups)
+        g2 = st.selectbox("Group 2", groups)
 
         if st.button("Run Test"):
 
-            table = pd.crosstab(df[v1],df[v2])
+            d1 = df[df[group]==g1][var].dropna()
+            d2 = df[df[group]==g2][var].dropna()
 
-            stat,p,_,_ = stats.chi2_contingency(table)
+            stat, p = stats.ttest_ind(d1, d2)
+
+            st.write("t statistic:", round(stat,4))
+            st.write("p-value:", round(p,4))
+
+            if p < alpha:
+                st.success("Reject H₀: Means are significantly different.")
+            else:
+                st.info("Fail to reject H₀.")
+
+# =====================================================
+# PAIRED T TEST
+# =====================================================
+
+    elif test == "Paired t-Test":
+
+        v1 = st.selectbox("Variable 1", numeric_cols)
+        v2 = st.selectbox("Variable 2", numeric_cols)
+
+        if st.button("Run Test"):
+
+            stat, p = stats.ttest_rel(df[v1], df[v2])
+
+            st.write("t statistic:", round(stat,4))
+            st.write("p-value:", round(p,4))
+
+            if p < alpha:
+                st.success("Reject H₀: Paired means differ.")
+            else:
+                st.info("Fail to reject H₀.")
+
+# =====================================================
+# CHI SQUARE TEST
+# =====================================================
+
+    elif test == "Chi-Square Test":
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+
+        v1 = st.selectbox("Variable 1", cat_cols)
+        v2 = st.selectbox("Variable 2", cat_cols)
+
+        if st.button("Run Test"):
+
+            table = pd.crosstab(df[v1], df[v2])
+
+            stat, p, _, _ = stats.chi2_contingency(table)
 
             st.dataframe(table)
 
-            st.write("Chi-square:",stat)
-            st.write("p-value:",p)
+            st.write("Chi-square:", round(stat,4))
+            st.write("p-value:", round(p,4))
 
-            if p < 0.05:
+            if p < alpha:
                 st.success("Reject H₀: Variables are associated.")
             else:
                 st.info("Fail to reject H₀.")
 
 # =====================================================
-# ANOVA
+# ONE WAY ANOVA
 # =====================================================
 
-    elif analysis == "ANOVA":
+    elif test == "One-Way ANOVA":
 
         var = st.selectbox("Numeric Variable", numeric_cols)
 
@@ -702,216 +628,146 @@ elif analysis_category == "Hypothesis Testing & Estimation":
 
             data = [df[df[group]==g][var].dropna() for g in groups]
 
-            stat,p = stats.f_oneway(*data)
+            stat, p = stats.f_oneway(*data)
 
-            st.write("F statistic:",stat)
-            st.write("p-value:",p)
+            st.write("F statistic:", round(stat,4))
+            st.write("p-value:", round(p,4))
 
-            if p < 0.05:
+            if p < alpha:
                 st.success("Reject H₀: At least one group mean differs.")
             else:
                 st.info("Fail to reject H₀.")
-# =====================================================
-# ONE SAMPLE T TEST
-# =====================================================
 
-    if test_type == "One-Sample t-Test":
 
-        var = st.selectbox("Variable", numeric_cols)
+elif analysis_category == "Regression":
 
-        mu = st.number_input("Hypothesized Mean", value=0.0)
+    st.subheader("📈 Regression Analysis")
 
-        alpha = st.slider("Significance Level", 0.01,0.10,0.05)
+    model_type = st.selectbox(
+        "Model Type",
+        [
+            "Simple Linear Regression",
+            "Multiple Linear Regression"
+        ]
+    )
 
-        data = df[var].dropna()
+    if model_type == "Simple Linear Regression":
 
-        stat, p = stats.ttest_1samp(data, mu)
+        x = st.selectbox("Independent Variable (X)", numeric_cols)
+        y = st.selectbox("Dependent Variable (Y)", numeric_cols)
 
-        st.write("### Results")
+        if st.button("Run Regression"):
 
-        st.write("t statistic:", stat)
-        st.write("p-value:", p)
+            X = df[[x]].dropna()
+            Y = df[y].loc[X.index]
 
-        if p < alpha:
-            st.success("Reject H₀: The sample mean is significantly different from the hypothesized mean.")
-        else:
-            st.info("Fail to reject H₀: No significant difference detected.")
+            model = LinearRegression()
+            model.fit(X, Y)
 
-# =====================================================
-# TWO SAMPLE T TEST
-# =====================================================
+            pred = model.predict(X)
 
-    elif test_type == "Two-Sample t-Test":
+            r2 = r2_score(Y, pred)
 
-        var = st.selectbox("Numeric Variable", numeric_cols)
+            st.write("### Model Results")
 
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
+            st.write("Intercept:", model.intercept_)
+            st.write("Slope:", model.coef_[0])
+            st.write("R²:", r2)
 
-        group = st.selectbox("Grouping Variable", cat_cols)
+            st.info(interpret_r2(r2))
 
-        groups = df[group].unique()
+            fig, ax = plt.subplots()
 
-        g1 = st.selectbox("Group 1", groups)
-        g2 = st.selectbox("Group 2", groups)
+            sns.scatterplot(x=X[x], y=Y)
+            plt.plot(X, pred)
 
-        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+            plt.title("Regression Fit")
 
-        data1 = df[df[group]==g1][var].dropna()
-        data2 = df[df[group]==g2][var].dropna()
+            st.pyplot(fig)
 
-        stat,p = stats.ttest_ind(data1,data2)
+    # ===============================================
 
-        st.write("### Results")
-        st.write("t statistic:", stat)
-        st.write("p-value:", p)
+    elif model_type == "Multiple Linear Regression":
 
-        if p < alpha:
-            st.success("Reject H₀: The group means are significantly different.")
-        else:
-            st.info("Fail to reject H₀: No significant difference between groups.")
+        y = st.selectbox("Dependent Variable", numeric_cols)
 
-# =====================================================
-# PAIRED T TEST
-# =====================================================
+        Xvars = st.multiselect(
+            "Independent Variables",
+            [c for c in numeric_cols if c != y]
+        )
 
-    elif test_type == "Paired t-Test":
+        if st.button("Run Regression"):
 
-        var1 = st.selectbox("Variable 1", numeric_cols)
-        var2 = st.selectbox("Variable 2", numeric_cols)
+            X = df[Xvars].dropna()
+            Y = df[y].loc[X.index]
 
-        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+            X = sm.add_constant(X)
 
-        data1 = df[var1].dropna()
-        data2 = df[var2].dropna()
+            model = sm.OLS(Y, X).fit()
 
-        stat,p = stats.ttest_rel(data1,data2)
+            st.write("### Model Summary")
 
-        st.write("### Results")
+            st.text(model.summary())
+            
+elif analysis_category == "Chi-Square Tests":
 
-        st.write("t statistic:", stat)
-        st.write("p-value:", p)
+    st.subheader("📊 Chi-Square Analysis")
 
-        if p < alpha:
-            st.success("Reject H₀: Significant difference between paired samples.")
-        else:
-            st.info("Fail to reject H₀: No significant difference detected.")
+    test = st.selectbox(
+        "Test Type",
+        [
+            "Test of Independence",
+            "Goodness of Fit"
+        ]
+    )
 
-# =====================================================
-# PROPORTION TEST
-# =====================================================
+    cat_cols = df.select_dtypes(include=["object","category"]).columns
 
-    elif test_type == "Proportion Test":
+    # ===============================================
 
-        successes = st.number_input("Number of Successes", value=10)
-        n = st.number_input("Sample Size", value=50)
-
-        p0 = st.number_input("Hypothesized Proportion", value=0.5)
-
-        alpha = st.slider("Significance Level",0.01,0.10,0.05)
-
-        stat,p = stats.binom_test(successes,n,p0)
-
-        st.write("p-value:",p)
-
-        if p < alpha:
-            st.success("Reject H₀: Proportion differs from hypothesized value.")
-        else:
-            st.info("Fail to reject H₀.")
-
-# =====================================================
-# CHI SQUARE TEST
-# =====================================================
-
-    elif test_type == "Chi-Square Test":
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
+    if test == "Test of Independence":
 
         var1 = st.selectbox("Variable 1", cat_cols)
         var2 = st.selectbox("Variable 2", cat_cols)
 
-        table = pd.crosstab(df[var1],df[var2])
+        if st.button("Run Chi-Square Test"):
 
-        stat,p,_,_ = stats.chi2_contingency(table)
+            table = pd.crosstab(df[var1], df[var2])
 
-        st.write("Contingency Table")
-        st.dataframe(table)
+            stat, p, dof, exp = stats.chi2_contingency(table)
 
-        st.write("Chi-square statistic:", stat)
-        st.write("p-value:", p)
+            st.write("### Contingency Table")
+            st.dataframe(table)
 
-        if p < 0.05:
-            st.success("Reject H₀: Variables are associated.")
-        else:
-            st.info("Fail to reject H₀: No significant association.")
+            st.write("Chi-square:", stat)
+            st.write("Degrees of Freedom:", dof)
+            st.write("p-value:", p)
 
-# =====================================================
-# ANOVA
-# =====================================================
+            st.info(interpret_p(p))
 
-    elif test_type == "One-Way ANOVA":
+    # ===============================================
 
-        var = st.selectbox("Numeric Variable", numeric_cols)
+    elif test == "Goodness of Fit":
 
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-        group = st.selectbox("Grouping Variable", cat_cols)
+        var = st.selectbox("Categorical Variable", cat_cols)
 
-        groups = df[group].unique()
+        if st.button("Run Test"):
 
-        data = [df[df[group]==g][var].dropna() for g in groups]
+            observed = df[var].value_counts().values
 
-        stat,p = stats.f_oneway(*data)
+            expected = np.repeat(
+                np.mean(observed),
+                len(observed)
+            )
 
-        st.write("F statistic:", stat)
-        st.write("p-value:", p)
+            stat, p = stats.chisquare(observed, expected)
 
-        if p < 0.05:
-            st.success("Reject H₀: At least one group mean differs.")
-        else:
-            st.info("Fail to reject H₀.")
+            st.write("Chi-square:", stat)
+            st.write("p-value:", p)
 
-# =====================================================
-# CONFIDENCE INTERVAL MEAN
-# =====================================================
+            st.info(interpret_p(p))
 
-    elif test_type == "Confidence Interval (Mean)":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
-        data = df[var].dropna()
-
-        mean = np.mean(data)
-        sem = stats.sem(data)
-
-        interval = stats.t.interval(conf,len(data)-1,loc=mean,scale=sem)
-
-        st.write("Sample Mean:",mean)
-        st.write("Confidence Interval:",interval)
-
-# =====================================================
-# CONFIDENCE INTERVAL PROPORTION
-# =====================================================
-
-    elif test_type == "Confidence Interval (Proportion)":
-
-        successes = st.number_input("Successes",10)
-        n = st.number_input("Sample Size",50)
-
-        conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
-        p = successes/n
-
-        z = stats.norm.ppf(1-(1-conf)/2)
-
-        se = np.sqrt(p*(1-p)/n)
-
-        lower = p - z*se
-        upper = p + z*se
-
-        st.write("Estimated Proportion:",p)
-        st.write("Confidence Interval:",(lower,upper))    
-
+    
 # =====================================================
 # TIME SERIES
 # =====================================================
