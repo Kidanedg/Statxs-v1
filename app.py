@@ -864,230 +864,209 @@ if df is not None:
                     else:
                         st.warning("Conclusion: Distributions are homogeneous across groups.")
 
+
 # =====================================================
 # TIME SERIES
 # =====================================================
 
-    elif analysis_category == "Time Series":
+elif analysis_category == "Time Series":
 
-        from statsmodels.tsa.stattools import adfuller
-        from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-        from statsmodels.tsa.seasonal import seasonal_decompose
+    from statsmodels.tsa.stattools import adfuller
+    from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+    from statsmodels.tsa.seasonal import seasonal_decompose
 
-        st.subheader("📈 Time Series Analysis")
+    st.subheader("📈 Time Series Analysis")
 
-        method = st.selectbox(
-            "Method",
-            [
-                "Time Series Plot",
-                "Moving Average",
-                "Trend Estimation",
-                "Stationarity Test (ADF)",
-                "Differencing",
-                "Autocorrelation (ACF)",
-                "Partial Autocorrelation (PACF)",
-                "Seasonal Decomposition"
-            ]
-        )
+    method = st.selectbox(
+        "Method",
+        [
+            "Time Series Plot",
+            "Moving Average",
+            "Trend Estimation",
+            "Stationarity Test (ADF)",
+            "Differencing",
+            "Autocorrelation (ACF)",
+            "Partial Autocorrelation (PACF)",
+            "Seasonal Decomposition"
+        ]
+    )
 
-        var = st.selectbox("Variable", numeric_cols)
+    var = st.selectbox("Variable", numeric_cols)
 
-        data = df[var].dropna()
+    data = df[var].dropna()
 
-        if len(data) < 10:
-            st.warning("Time series analysis requires at least 10 observations.")
-            st.stop()
+    if len(data) < 10:
+        st.warning("Time series analysis requires at least 10 observations.")
+        st.stop()
 
-# =====================================================
-# TIME SERIES PLOT
-# =====================================================
+    # =====================================================
+    # TIME SERIES PLOT
+    # =====================================================
 
-        if method == "Time Series Plot":
+    if method == "Time Series Plot":
 
-            fig, ax = plt.subplots()
+        fig, ax = plt.subplots()
 
-            ax.plot(data, color="blue")
+        ax.plot(data)
 
-            ax.set_title("Time Series Plot")
-            ax.set_xlabel("Observation")
-            ax.set_ylabel(var)
+        ax.set_title("Time Series Plot")
+        ax.set_xlabel("Observation")
+        ax.set_ylabel(var)
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: Displays how the variable changes over time.")
+
+    # =====================================================
+    # MOVING AVERAGE
+    # =====================================================
+
+    elif method == "Moving Average":
+
+        window = st.slider("Window Size", 2, 30, 5)
+
+        ma = data.rolling(window).mean()
+
+        fig, ax = plt.subplots()
+
+        ax.plot(data, label="Original")
+        ax.plot(ma, label="Moving Average")
+
+        ax.legend()
+        ax.set_title("Moving Average Smoothing")
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: Moving averages smooth short-term fluctuations and reveal long-term trends.")
+
+    # =====================================================
+    # TREND ESTIMATION
+    # =====================================================
+
+    elif method == "Trend Estimation":
+
+        x = np.arange(len(data))
+
+        slope, intercept = np.polyfit(x, data, 1)
+
+        trend = slope * x + intercept
+
+        fig, ax = plt.subplots()
+
+        ax.plot(data, label="Observed")
+        ax.plot(trend, label="Trend")
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: Trend estimation shows the long-term direction of the time series.")
+
+    # =====================================================
+    # STATIONARITY TEST
+    # =====================================================
+
+    elif method == "Stationarity Test (ADF)":
+
+        result = adfuller(data)
+
+        stat = result[0]
+        p = result[1]
+
+        col1, col2 = st.columns(2)
+
+        col1.metric("ADF Statistic", round(stat,4))
+        col2.metric("p-value", round(p,4))
+
+        st.write("Critical Values")
+
+        for key,value in result[4].items():
+            st.write(f"{key}: {round(value,4)}")
+
+        if p < 0.05:
+
+            st.success(
+                "Interpretation: The time series is **stationary** (reject unit root hypothesis)."
+            )
+
+        else:
+
+            st.warning(
+                "Interpretation: The series is **non-stationary**. Differencing may be required."
+            )
+
+    # =====================================================
+    # DIFFERENCING
+    # =====================================================
+
+    elif method == "Differencing":
+
+        lag = st.slider("Lag",1,10,1)
+
+        diff = data.diff(lag).dropna()
+
+        fig, ax = plt.subplots()
+
+        ax.plot(diff)
+
+        ax.set_title("Differenced Series")
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: Differencing removes trend and stabilizes the mean.")
+
+    # =====================================================
+    # AUTOCORRELATION
+    # =====================================================
+
+    elif method == "Autocorrelation (ACF)":
+
+        fig, ax = plt.subplots()
+
+        plot_acf(data, ax=ax)
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: ACF measures correlation between observations and their lagged values.")
+
+    # =====================================================
+    # PARTIAL AUTOCORRELATION
+    # =====================================================
+
+    elif method == "Partial Autocorrelation (PACF)":
+
+        fig, ax = plt.subplots()
+
+        max_lag = min(20, len(data)//2)
+
+        plot_pacf(data, ax=ax, lags=max_lag)
+
+        st.pyplot(fig)
+
+        st.info("Interpretation: PACF identifies the direct relationship between observations at different lags.")
+
+    # =====================================================
+    # SEASONAL DECOMPOSITION
+    # =====================================================
+
+    elif method == "Seasonal Decomposition":
+
+        period = st.slider("Seasonal Period",2,24,12)
+
+        if len(data) < period*2:
+
+            st.warning("Dataset must contain at least two seasonal cycles.")
+
+        else:
+
+            decomposition = seasonal_decompose(data, period=period)
+
+            fig = decomposition.plot()
 
             st.pyplot(fig)
 
-            st.info(
-                "Interpretation: Displays how the variable changes over time."
-            )
-
-# =====================================================
-# MOVING AVERAGE
-# =====================================================
-
-        elif method == "Moving Average":
-
-            window = st.slider("Window Size", 2, 30, 5)
-
-            ma = data.rolling(window).mean()
-
-            fig, ax = plt.subplots()
-
-            ax.plot(data, label="Original", color="blue")
-            ax.plot(ma, label="Moving Average", color="red")
-
-            ax.legend()
-            ax.set_title("Moving Average Smoothing")
-
-            st.pyplot(fig)
-
-            st.info(
-                "Interpretation: Moving averages smooth short-term fluctuations and highlight long-term trends."
-            )
-
-# =====================================================
-# TREND ESTIMATION
-# =====================================================
-
-        elif method == "Trend Estimation":
-
-            x = np.arange(len(data))
-
-            slope, intercept = np.polyfit(x, data, 1)
-
-            trend = slope * x + intercept
-
-            fig, ax = plt.subplots()
-
-            ax.plot(data, label="Observed", color="blue")
-            ax.plot(trend, label="Trend Line", color="red")
-
-            ax.legend()
-            ax.set_title("Trend Estimation")
-
-            st.pyplot(fig)
-
-            st.info(
-                "Interpretation: The trend line represents the long-term movement of the series."
-            )
-
-# =====================================================
-# STATIONARITY TEST (ADF)
-# =====================================================
-
-        elif method == "Stationarity Test (ADF)":
-
-            try:
-
-                result = adfuller(data)
-
-                stat = result[0]
-                p = result[1]
-
-                col1, col2 = st.columns(2)
-
-                col1.metric("ADF Statistic", round(stat,4))
-                col2.metric("p-value", round(p,4))
-
-                st.markdown("### Critical Values")
-
-                for key,value in result[4].items():
-                    st.write(f"{key}: {round(value,4)}")
-
-                if p < 0.05:
-                    st.success(
-                        "Interpretation: The time series is **stationary** (reject the null hypothesis of a unit root)."
-                    )
-                else:
-                    st.warning(
-                        "Interpretation: The time series is **non-stationary**. Differencing may be required."
-                    )
-
-            except:
-                st.error("ADF test could not be computed for this series.")
-
-# =====================================================
-# DIFFERENCING
-# =====================================================
-
-        elif method == "Differencing":
-
-            lag = st.slider("Lag",1,10,1)
-
-            diff = data.diff(lag).dropna()
-
-            fig, ax = plt.subplots()
-
-            ax.plot(diff, color="purple")
-
-            ax.set_title("Differenced Series")
-
-            st.pyplot(fig)
-
-            st.info(
-                "Interpretation: Differencing removes trends and stabilizes the mean of the time series."
-            )
-
-# =====================================================
-# AUTOCORRELATION FUNCTION
-# =====================================================
-
-        elif method == "Autocorrelation (ACF)":
-
-            fig, ax = plt.subplots()
-
-            plot_acf(data, ax=ax)
-
-            ax.set_title("Autocorrelation Function")
-
-            st.pyplot(fig)
-
-            st.info(
-                "Interpretation: ACF measures correlation between observations and their lagged values."
-            )
-
-# =====================================================
-# PARTIAL AUTOCORRELATION FUNCTION
-# =====================================================
-
-        elif method == "Partial Autocorrelation (PACF)":
-
-            fig, ax = plt.subplots()
-
-            max_lag = min(20, len(data)//2)
-
-            plot_pacf(data, ax=ax, lags=max_lag)
-
-            ax.set_title("Partial Autocorrelation Function")
-
-            st.pyplot(fig)
-
-            st.info(
-                "Interpretation: PACF shows the direct effect of past observations after removing intermediate lag effects."
-            )
-
-# =====================================================
-# SEASONAL DECOMPOSITION
-# =====================================================
-
-        elif method == "Seasonal Decomposition":
-
-            period = st.slider("Seasonal Period",2,24,12)
-
-            if len(data) < period*2:
-
-                st.warning("Dataset must contain at least two seasonal cycles.")
-
-            else:
-
-                decomposition = seasonal_decompose(data, period=period)
-
-                fig = decomposition.plot()
-
-                st.pyplot(fig)
-
-                st.info(
-                    "Interpretation: Decomposition separates the series into **trend**, **seasonal**, and **residual** components."
-                )
-
-    
+            st.info("Interpretation: Decomposition separates trend, seasonal, and residual components.")
+   
 # =====================================================
 # QUALITY CONTROL
 # =====================================================
