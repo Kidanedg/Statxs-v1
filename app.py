@@ -162,8 +162,6 @@ def interpret_r2(r2):
 # ANALYSIS MENU
 # =====================================================
 
-if df is not None:
-
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
     categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
 
@@ -236,7 +234,7 @@ if df is not None:
 # GRAPHICS
 # =====================================================
 
-    elif analysis_category == "Graphics":
+    if analysis_category == "Graphics":
 
         st.subheader("Data Visualization")
 
@@ -285,7 +283,7 @@ if df is not None:
 # REGRESSION
 # =====================================================
 
-    elif analysis_category == "Regression":
+    if analysis_category == "Regression":
 
         st.subheader("📈 Regression Analysis")
 
@@ -534,7 +532,7 @@ if df is not None:
 # CHI-SQUARE TESTS
 # =====================================================
 
-    elif analysis_category == "Chi-Square Tests":
+    if analysis_category == "Chi-Square Tests":
 
         st.subheader("📊 Chi-Square Analysis")
 
