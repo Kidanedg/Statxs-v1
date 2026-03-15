@@ -21,21 +21,113 @@ st.title("StatX Scientific Statistical Platform")
 st.write("Upload a dataset and perform statistical analysis with automatic interpretation.")
 
 # =====================================================
-# DATA UPLOAD
+# =====================================================
+# DATA UPLOAD SYSTEM
 # =====================================================
 
-st.sidebar.header("Dataset")
+st.sidebar.markdown("## 📂 Dataset Manager")
 
-uploaded = st.sidebar.file_uploader("Upload CSV or Excel", type=["csv","xlsx"])
+uploaded = st.sidebar.file_uploader(
+    "Upload Dataset",
+    type=[
+        "csv", "xlsx", "xls",
+        "txt", "json",
+        "parquet",
+        "dta", "sav"
+    ]
+)
 
 df = None
 
+# =====================================================
+# LOAD DATA
+# =====================================================
+
 if uploaded:
 
-    if uploaded.name.endswith(".csv"):
-        df = pd.read_csv(uploaded)
-    else:
-        df = pd.read_excel(uploaded)
+    try:
+
+        file_name = uploaded.name.lower()
+
+        if file_name.endswith(".csv"):
+            df = pd.read_csv(uploaded)
+
+        elif file_name.endswith((".xlsx", ".xls")):
+            df = pd.read_excel(uploaded)
+
+        elif file_name.endswith(".txt"):
+            df = pd.read_csv(uploaded, sep=None, engine="python")
+
+        elif file_name.endswith(".json"):
+            df = pd.read_json(uploaded)
+
+        elif file_name.endswith(".parquet"):
+            df = pd.read_parquet(uploaded)
+
+        elif file_name.endswith(".dta"):
+            df = pd.read_stata(uploaded)
+
+        elif file_name.endswith(".sav"):
+            df = pd.read_spss(uploaded)
+
+        st.sidebar.success("✅ Dataset Loaded")
+
+    except Exception as e:
+        st.sidebar.error(f"❌ Error loading dataset: {e}")
+
+
+# =====================================================
+# DATASET DISPLAY PAGE
+# =====================================================
+
+if df is not None:
+
+    st.markdown("## 📊 Dataset Overview")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Rows", df.shape[0])
+    col2.metric("Columns", df.shape[1])
+    col3.metric("Missing Values", df.isna().sum().sum())
+
+    st.divider()
+
+    # Preview
+
+    st.markdown("### 🔎 Data Preview")
+    st.dataframe(df.head(20), use_container_width=True)
+
+    # Column Types
+
+    st.markdown("### 📑 Column Information")
+
+    info_df = pd.DataFrame({
+        "Column": df.columns,
+        "Type": df.dtypes.astype(str),
+        "Missing Values": df.isna().sum().values
+    })
+
+    st.dataframe(info_df, use_container_width=True)
+
+else:
+
+    st.markdown(
+        """
+        # 📈 Welcome to **StatX v1**
+
+        Upload a dataset from the sidebar to begin statistical analysis.
+
+        ### Supported Formats
+
+        - CSV
+        - Excel
+        - TXT
+        - JSON
+        - Parquet
+        - SPSS (.sav)
+        - Stata (.dta)
+        """
+    )
 
 # =====================================================
 # INTERPRETATION FUNCTIONS
