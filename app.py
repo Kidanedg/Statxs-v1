@@ -271,22 +271,32 @@ def interpret_r2(r2):
 
 if df is not None:
 
-    numeric_cols = df.select_dtypes(include=np.number).columns
-    categorical_cols = df.select_dtypes(exclude=np.number).columns
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
 
-    st.sidebar.markdown("## 📊 Analysis Menu")
+    st.sidebar.markdown("## 📊 StatX Analysis Menu")
 
     analysis_category = st.sidebar.selectbox(
-        "Select Analysis",
+        "Select Analysis Module",
         [
             "Descriptive Statistics",
-            "Graphics",
+            "Graphics & Visualization",
             "Hypothesis Testing",
-            "Regression",
-            "Chi-Square Tests"
+            "Estimation",
+            "Regression Analysis",
+            "Chi-Square & Categorical Tests",
+            "ANOVA",
+            "Design of Experiments (DOE)",
+            "Time Series Analysis",
+            "Quality Control",
+            "Multivariate Analysis",
+            "Biostatistics",
+            "Bioinformatics",
+            "Biometrics",
+            "Biomolecular Modeling",
+            "Chemoinformatics"
         ]
     )
-
 # =====================================================
 # DESCRIPTIVE STATISTICS
 # =====================================================
