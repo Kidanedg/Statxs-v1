@@ -325,4 +325,125 @@ if df is not None:
 else:
 
     st.info("Upload a dataset to begin analysis.")
-```
+
+# =====================================================
+# TIME SERIES ANALYSIS
+# =====================================================
+
+elif analysis_category == "Time Series":
+
+    st.subheader("Time Series Analysis")
+
+    var = st.selectbox("Select Time Series Variable", numeric_cols)
+
+    data = df[var]
+
+    if method == "Time Series Plot":
+
+        fig, ax = plt.subplots()
+        ax.plot(data)
+        ax.set_title("Time Series Plot")
+        st.pyplot(fig)
+
+        st.write("Interpretation")
+        st.write("The plot shows the evolution of the variable over time.")
+
+    elif method == "Moving Average":
+
+        window = st.slider("Window Size",2,20,5)
+
+        ma = data.rolling(window).mean()
+
+        fig, ax = plt.subplots()
+        ax.plot(data,label="Original")
+        ax.plot(ma,label="Moving Average")
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.write("Interpretation")
+        st.write("Moving average smooths short-term fluctuations and reveals trends.")
+
+    elif method == "Trend Estimation":
+
+        t = np.arange(len(data))
+
+        model = LinearRegression()
+        model.fit(t.reshape(-1,1),data)
+
+        trend = model.predict(t.reshape(-1,1))
+
+        fig, ax = plt.subplots()
+        ax.plot(data,label="Original")
+        ax.plot(trend,label="Trend")
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.write("Interpretation")
+        st.write("Trend line indicates long-term direction of the series.")
+
+# =====================================================
+# QUALITY CONTROL
+# =====================================================
+
+elif analysis_category == "Quality Control":
+
+    st.subheader("Statistical Quality Control")
+
+    var = st.selectbox("Process Variable", numeric_cols)
+
+    data = df[var]
+
+    if method == "Control Chart (X-bar)":
+
+        mean = np.mean(data)
+        std = np.std(data)
+
+        UCL = mean + 3*std
+        LCL = mean - 3*std
+
+        fig, ax = plt.subplots()
+
+        ax.plot(data,marker="o")
+        ax.axhline(mean,label="Mean")
+        ax.axhline(UCL,color="red",label="UCL")
+        ax.axhline(LCL,color="red",label="LCL")
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.write("Interpretation")
+
+        if any(data > UCL) or any(data < LCL):
+
+            st.write("Process may be out of control.")
+
+        else:
+
+            st.write("Process appears to be in statistical control.")
+
+
+    elif method == "Process Capability":
+
+        LSL = st.number_input("Lower Specification Limit")
+        USL = st.number_input("Upper Specification Limit")
+
+        mean = np.mean(data)
+        std = np.std(data)
+
+        Cp = (USL-LSL)/(6*std)
+
+        st.write("Process Capability Cp:",Cp)
+
+        if Cp > 1.33:
+            st.write("Process capability is good.")
+
+        elif Cp > 1:
+            st.write("Process capability is acceptable.")
+
+        else:
+            st.write("Process capability is poor.")
+
+
