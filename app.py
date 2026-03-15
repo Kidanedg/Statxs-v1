@@ -284,6 +284,55 @@ def regression_table(model, test_stat="t"):
 
     return coef_table
 
+# =====================================================
+# HELPER FUNCTIONS
+# =====================================================
+
+def interpret_r2(r2):
+
+    if r2 < 0.10:
+        return "Very weak model fit (R² < 0.10)"
+    elif r2 < 0.30:
+        return "Weak model fit"
+    elif r2 < 0.50:
+        return "Moderate model fit"
+    elif r2 < 0.70:
+        return "Good model fit"
+    elif r2 < 0.90:
+        return "Very good model fit"
+    else:
+        return "Excellent model fit"
+
+
+def regression_table(model, stat_label="t"):
+
+    coef_table = pd.DataFrame({
+        "Variable": model.params.index,
+        "Coefficient": model.params.values,
+        "Std Error": model.bse.values,
+        f"{stat_label} value": model.tvalues.values,
+        "p-value": model.pvalues.values,
+        "CI Lower": model.conf_int()[0].values,
+        "CI Upper": model.conf_int()[1].values
+    })
+
+    return coef_table.round(4)
+
+
+# =====================================================
+# CATEGORY SELECTOR (IMPORTANT)
+# =====================================================
+
+analysis_category = st.sidebar.selectbox(
+    "Analysis Category",
+    [
+        "Descriptive Statistics",
+        "Graphics",
+        "Regression",
+        "Time Series"
+    ]
+)
+
 
 # =====================================================
 # REGRESSION
@@ -319,39 +368,27 @@ if analysis_category == "Regression":
 
         if st.button("Run Regression"):
 
-            data = df[[x,y]].dropna()
+            data = df[[x, y]].dropna()
 
             X = sm.add_constant(data[x])
             Y = data[y]
 
-            model = sm.OLS(Y,X).fit()
+            model = sm.OLS(Y, X).fit()
 
-            st.markdown("### 📊 Model Fit Statistics")
+            st.markdown("### 📊 Model Summary")
 
-            fit_table = pd.DataFrame({
-                "Statistic":[
-                    "R-squared",
-                    "Adjusted R-squared",
-                    "AIC",
-                    "BIC",
-                    "Observations"
-                ],
-                "Value":[
-                    round(model.rsquared,4),
-                    round(model.rsquared_adj,4),
-                    round(model.aic,2),
-                    round(model.bic,2),
-                    int(model.nobs)
-                ]
-            })
+            col1, col2, col3, col4 = st.columns(4)
 
-            st.table(fit_table)
+            col1.metric("R²", round(model.rsquared,4))
+            col2.metric("Adj R²", round(model.rsquared_adj,4))
+            col3.metric("AIC", round(model.aic,2))
+            col4.metric("BIC", round(model.bic,2))
 
             st.info(interpret_r2(model.rsquared))
 
             coef_table = regression_table(model)
 
-            st.markdown("### 📑 Coefficient Estimates")
+            st.markdown("### 📑 Coefficients")
             st.dataframe(coef_table, use_container_width=True)
 
             intercept = model.params["const"]
@@ -365,9 +402,6 @@ if analysis_category == "Regression":
             sns.regplot(x=data[x], y=data[y], ci=95, ax=ax)
 
             ax.set_title("Simple Linear Regression")
-            ax.set_xlabel(x)
-            ax.set_ylabel(y)
-
             st.pyplot(fig)
 
 
@@ -390,39 +424,27 @@ if analysis_category == "Regression":
                 st.warning("Select at least one independent variable.")
                 st.stop()
 
-            data = df[[y]+Xvars].dropna()
+            data = df[[y] + Xvars].dropna()
 
             X = sm.add_constant(data[Xvars])
             Y = data[y]
 
-            model = sm.OLS(Y,X).fit()
+            model = sm.OLS(Y, X).fit()
 
-            st.markdown("### 📊 Model Fit Statistics")
+            st.markdown("### 📊 Model Summary")
 
-            fit_table = pd.DataFrame({
-                "Statistic":[
-                    "R-squared",
-                    "Adjusted R-squared",
-                    "AIC",
-                    "BIC",
-                    "Observations"
-                ],
-                "Value":[
-                    round(model.rsquared,4),
-                    round(model.rsquared_adj,4),
-                    round(model.aic,2),
-                    round(model.bic,2),
-                    int(model.nobs)
-                ]
-            })
+            col1,col2,col3,col4 = st.columns(4)
 
-            st.table(fit_table)
+            col1.metric("R²", round(model.rsquared,4))
+            col2.metric("Adj R²", round(model.rsquared_adj,4))
+            col3.metric("AIC", round(model.aic,2))
+            col4.metric("BIC", round(model.bic,2))
 
             st.info(interpret_r2(model.rsquared))
 
             coef_table = regression_table(model)
 
-            st.markdown("### 📑 Coefficient Estimates")
+            st.markdown("### 📑 Coefficient Table")
             st.dataframe(coef_table, use_container_width=True)
 
 
@@ -432,21 +454,12 @@ if analysis_category == "Regression":
 
     elif model_type == "Logistic Regression":
 
-        if len(categorical_cols) == 0:
-            st.warning("Dataset must contain a categorical variable.")
-            st.stop()
-
         y = st.selectbox("Binary Dependent Variable", categorical_cols)
-
         Xvars = st.multiselect("Independent Variables", numeric_cols)
 
         if st.button("Run Logistic Regression"):
 
-            if len(Xvars) == 0:
-                st.warning("Select predictors.")
-                st.stop()
-
-            data = df[[y]+Xvars].dropna()
+            data = df[[y] + Xvars].dropna()
 
             if data[y].nunique() != 2:
                 st.error("Dependent variable must have exactly 2 categories.")
@@ -455,16 +468,12 @@ if analysis_category == "Regression":
             Y = pd.factorize(data[y])[0]
             X = sm.add_constant(data[Xvars])
 
-            model = sm.Logit(Y,X).fit(disp=0)
+            model = sm.Logit(Y, X).fit(disp=0)
 
-            coef_table = regression_table(model, test_stat="z")
+            coef_table = regression_table(model,"z")
 
-            st.markdown("### 📑 Logistic Regression Coefficients")
+            st.markdown("### 📑 Logistic Regression Model")
             st.dataframe(coef_table, use_container_width=True)
-
-            st.info(
-                "Positive coefficients increase the log-odds of the event occurring."
-            )
 
 
 # =====================================================
@@ -482,29 +491,17 @@ if analysis_category == "Regression":
 
         if st.button("Run Poisson Regression"):
 
-            if len(Xvars) == 0:
-                st.warning("Select predictors.")
-                st.stop()
-
-            data = df[[y]+Xvars].dropna()
-
-            if (data[y] < 0).any():
-                st.error("Poisson regression requires non-negative count data.")
-                st.stop()
+            data = df[[y] + Xvars].dropna()
 
             X = sm.add_constant(data[Xvars])
             Y = data[y]
 
             model = sm.GLM(Y, X, family=sm.families.Poisson()).fit()
 
-            coef_table = regression_table(model, test_stat="z")
+            coef_table = regression_table(model,"z")
 
-            st.markdown("### 📑 Poisson Regression Coefficients")
+            st.markdown("### 📑 Poisson Regression Model")
             st.dataframe(coef_table, use_container_width=True)
-
-            st.info(
-                "Coefficients represent expected change in the log-count of the response variable."
-            )
 
 
 # =====================================================
@@ -522,11 +519,7 @@ if analysis_category == "Regression":
 
         if st.button("Run Stepwise Regression"):
 
-            if len(Xvars) == 0:
-                st.warning("Select candidate variables.")
-                st.stop()
-
-            data = df[[y]+Xvars].dropna()
+            data = df[[y] + Xvars].dropna()
 
             remaining = list(Xvars)
             selected = []
@@ -542,24 +535,23 @@ if analysis_category == "Regression":
                     X = sm.add_constant(data[predictors])
                     Y = data[y]
 
-                    model = sm.OLS(Y,X).fit()
+                    model = sm.OLS(Y, X).fit()
 
-                    scores.append((model.aic,candidate))
+                    scores.append((model.aic, candidate))
 
                 scores.sort()
 
-                best_aic,best_candidate = scores[0]
+                best_aic, best_candidate = scores[0]
 
                 selected.append(best_candidate)
                 remaining.remove(best_candidate)
 
-            st.markdown("### Selected Variables")
-            st.success(selected)
+            st.success(f"Selected Variables: {selected}")
 
             X = sm.add_constant(data[selected])
             Y = data[y]
 
-            final_model = sm.OLS(Y,X).fit()
+            final_model = sm.OLS(Y, X).fit()
 
             coef_table = regression_table(final_model)
 
@@ -567,7 +559,7 @@ if analysis_category == "Regression":
             st.dataframe(coef_table, use_container_width=True)
 
             st.info(interpret_r2(final_model.rsquared))
-            
+        
 # =====================================================
 # CHI-SQUARE TESTS
 # =====================================================
