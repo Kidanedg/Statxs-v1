@@ -698,14 +698,11 @@ if df is not None:
 
 
 # =====================================================
+# =====================================================
 # TIME SERIES
 # =====================================================
 
 elif analysis_category == "Time Series":
-
-    from statsmodels.tsa.stattools import adfuller
-    from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-    from statsmodels.tsa.seasonal import seasonal_decompose
 
     st.subheader("📈 Time Series Analysis")
 
@@ -725,7 +722,7 @@ elif analysis_category == "Time Series":
 
     var = st.selectbox("Variable", numeric_cols)
 
-    data = df[var].dropna()
+    data = df[var].dropna().reset_index(drop=True)
 
     if len(data) < 10:
         st.warning("Time series analysis requires at least 10 observations.")
@@ -739,7 +736,7 @@ elif analysis_category == "Time Series":
 
         fig, ax = plt.subplots()
 
-        ax.plot(data)
+        ax.plot(data, marker="o")
 
         ax.set_title("Time Series Plot")
         ax.set_xlabel("Observation")
@@ -747,7 +744,10 @@ elif analysis_category == "Time Series":
 
         st.pyplot(fig)
 
-        st.info("Interpretation: Displays how the variable changes over time.")
+        st.info(
+            "Interpretation: The plot shows how the variable evolves across observations. "
+            "Look for patterns such as trend, seasonality, or structural breaks."
+        )
 
     # =====================================================
     # MOVING AVERAGE
@@ -762,14 +762,17 @@ elif analysis_category == "Time Series":
         fig, ax = plt.subplots()
 
         ax.plot(data, label="Original")
-        ax.plot(ma, label="Moving Average")
+        ax.plot(ma, linewidth=3, label="Moving Average")
 
         ax.legend()
         ax.set_title("Moving Average Smoothing")
 
         st.pyplot(fig)
 
-        st.info("Interpretation: Moving averages smooth short-term fluctuations and reveal long-term trends.")
+        st.info(
+            "Interpretation: Moving averages smooth short-term noise and highlight "
+            "the underlying long-term trend of the series."
+        )
 
     # =====================================================
     # TREND ESTIMATION
@@ -786,13 +789,16 @@ elif analysis_category == "Time Series":
         fig, ax = plt.subplots()
 
         ax.plot(data, label="Observed")
-        ax.plot(trend, label="Trend")
+        ax.plot(trend, linewidth=3, label="Estimated Trend")
 
         ax.legend()
 
         st.pyplot(fig)
 
-        st.info("Interpretation: Trend estimation shows the long-term direction of the time series.")
+        st.info(
+            f"Estimated Trend Equation:  Y = {round(intercept,4)} + {round(slope,4)}t\n\n"
+            "Interpretation: The slope indicates whether the series is increasing or decreasing over time."
+        )
 
     # =====================================================
     # STATIONARITY TEST
@@ -818,13 +824,14 @@ elif analysis_category == "Time Series":
         if p < 0.05:
 
             st.success(
-                "Interpretation: The time series is **stationary** (reject unit root hypothesis)."
+                "Conclusion: Reject H₀. The time series is **stationary**."
             )
 
         else:
 
             st.warning(
-                "Interpretation: The series is **non-stationary**. Differencing may be required."
+                "Conclusion: Fail to reject H₀. The series is **non-stationary**. "
+                "Differencing or transformation may be required."
             )
 
     # =====================================================
@@ -845,7 +852,10 @@ elif analysis_category == "Time Series":
 
         st.pyplot(fig)
 
-        st.info("Interpretation: Differencing removes trend and stabilizes the mean.")
+        st.info(
+            "Interpretation: Differencing removes trend and stabilizes the mean, "
+            "which helps achieve stationarity for ARIMA modeling."
+        )
 
     # =====================================================
     # AUTOCORRELATION
@@ -855,11 +865,14 @@ elif analysis_category == "Time Series":
 
         fig, ax = plt.subplots()
 
-        plot_acf(data, ax=ax)
+        plot_acf(data, ax=ax, lags=min(40, len(data)//2))
 
         st.pyplot(fig)
 
-        st.info("Interpretation: ACF measures correlation between observations and their lagged values.")
+        st.info(
+            "Interpretation: ACF measures correlation between observations and their lagged values. "
+            "Useful for identifying MA components in ARIMA models."
+        )
 
     # =====================================================
     # PARTIAL AUTOCORRELATION
@@ -875,7 +888,10 @@ elif analysis_category == "Time Series":
 
         st.pyplot(fig)
 
-        st.info("Interpretation: PACF identifies the direct relationship between observations at different lags.")
+        st.info(
+            "Interpretation: PACF measures the direct relationship between observations "
+            "at different lags and helps identify AR model order."
+        )
 
     # =====================================================
     # SEASONAL DECOMPOSITION
@@ -897,7 +913,11 @@ elif analysis_category == "Time Series":
 
             st.pyplot(fig)
 
-            st.info("Interpretation: Decomposition separates trend, seasonal, and residual components.")
+            st.info(
+                "Interpretation: Decomposition separates the series into "
+                "**Trend, Seasonal, and Residual components**, "
+                "revealing hidden patterns in the data."
+            )
 
 # =====================================================
 # ANOVA
