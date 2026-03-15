@@ -15,15 +15,16 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 import streamlit as st
+import streamlit as st
 
 # =====================================================
 # PAGE CONFIG
 # =====================================================
 
 st.set_page_config(
-    page_title="StatX Statistical WebLab",
-    layout="wide",
-    page_icon="📊"
+    page_title="StatX Statistical WebLab Software",
+    page_icon="📊",
+    layout="wide"
 )
 
 # =====================================================
@@ -34,32 +35,47 @@ st.markdown("""
 <style>
 
 .main-title{
-    font-size:60px;
-    font-weight:800;
+    font-size:64px;
+    font-weight:900;
     text-align:center;
     color:#cc0000;
+    letter-spacing:2px;
+}
+
+.version{
+    text-align:center;
+    font-size:16px;
+    color:gray;
 }
 
 .subtitle{
-    font-size:28px;
+    font-size:30px;
     text-align:center;
     color:black;
-    font-weight:600;
+    font-weight:700;
 }
 
 .description{
     text-align:center;
-    font-size:20px;
+    font-size:19px;
     color:#444;
     padding-top:10px;
+    line-height:1.6;
 }
 
 .divider{
     height:4px;
     background-color:#cc0000;
     border-radius:5px;
-    margin-top:10px;
+    margin-top:15px;
     margin-bottom:30px;
+}
+
+.footer{
+    text-align:center;
+    font-size:14px;
+    color:gray;
+    margin-top:80px;
 }
 
 </style>
@@ -67,10 +83,12 @@ st.markdown("""
 
 
 # =====================================================
-# FRONT PAGE
+# FRONT PAGE HEADER
 # =====================================================
 
 st.markdown('<div class="main-title">StatX</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="version">Version 1.0</div>', unsafe_allow_html=True)
 
 st.markdown(
     '<div class="subtitle">StatX Statistical WebLab Software</div>',
@@ -80,21 +98,34 @@ st.markdown(
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
 st.markdown(
-    """
-    <div class="description">
+"""
+<div class="description">
 
-    A scientific statistical computing platform designed for  
-    <b>data analysis, modeling, and intelligent statistical discovery.</b>
+A modern scientific environment for  
+<b>statistical computing, data analysis, and data visualization.</b>
 
-    Upload a dataset and perform statistical analysis with  
-    <b>automatic interpretation and visualization.</b>
+Upload a dataset to perform statistical analysis with  
+<b>automatic interpretation and interactive graphics.</b>
 
-    </div>
-    """,
-    unsafe_allow_html=True
+</div>
+""",
+unsafe_allow_html=True
 )
 
+
 # =====================================================
+# COPYRIGHT
+# =====================================================
+
+st.markdown(
+"""
+<div class="footer">
+© 2024–2026 <b>Dr. Kidane Desta</b> — Founder of <b>StatX Software</b><br>
+All Rights Reserved.
+</div>
+""",
+unsafe_allow_html=True
+)
 # =====================================================
 # DATA UPLOAD SYSTEM
 # =====================================================
