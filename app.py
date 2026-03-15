@@ -870,36 +870,210 @@ if df is not None:
 
     elif analysis_category == "Time Series":
 
-        st.subheader("Time Series Analysis")
+        from statsmodels.tsa.stattools import adfuller
+        from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+        from statsmodels.tsa.seasonal import seasonal_decompose
+
+        st.subheader("📈 Time Series Analysis")
 
         method = st.selectbox(
             "Method",
-            ["Time Series Plot","Moving Average","Trend Estimation"]
+            [
+                "Time Series Plot",
+                "Moving Average",
+                "Trend Estimation",
+                "Stationarity Test (ADF)",
+                "Differencing",
+                "Autocorrelation (ACF)",
+                "Partial Autocorrelation (PACF)",
+                "Seasonal Decomposition"
+            ]
         )
 
         var = st.selectbox("Variable", numeric_cols)
 
-        data = df[var]
+        data = df[var].dropna()
+
+# =====================================================
+# TIME SERIES PLOT
+# =====================================================
 
         if method == "Time Series Plot":
 
             fig, ax = plt.subplots()
+
             ax.plot(data)
+
+            ax.set_title("Time Series Plot")
+            ax.set_xlabel("Time")
+            ax.set_ylabel(var)
+
             st.pyplot(fig)
+
+            st.info(
+                "Interpretation: This plot shows how the variable evolves over time."
+            )
+
+# =====================================================
+# MOVING AVERAGE
+# =====================================================
 
         elif method == "Moving Average":
 
-            window = st.slider("Window",2,20,5)
+            window = st.slider("Window Size",2,30,5)
 
             ma = data.rolling(window).mean()
 
             fig, ax = plt.subplots()
-            ax.plot(data,label="Original")
+
+            ax.plot(data,label="Original Data")
             ax.plot(ma,label="Moving Average")
+
             ax.legend()
+
+            ax.set_title("Moving Average Smoothing")
 
             st.pyplot(fig)
 
+            st.info(
+                "Interpretation: Moving averages smooth short-term fluctuations "
+                "to highlight long-term trends."
+            )
+
+# =====================================================
+# TREND ESTIMATION
+# =====================================================
+
+        elif method == "Trend Estimation":
+
+            x = np.arange(len(data))
+
+            slope, intercept = np.polyfit(x,data,1)
+
+            trend = slope*x + intercept
+
+            fig, ax = plt.subplots()
+
+            ax.plot(data,label="Observed")
+            ax.plot(trend,label="Trend Line")
+
+            ax.legend()
+
+            ax.set_title("Trend Estimation")
+
+            st.pyplot(fig)
+
+            st.info(
+                "Interpretation: The trend line shows the long-term direction "
+                "of the time series."
+            )
+
+# =====================================================
+# STATIONARITY TEST (ADF)
+# =====================================================
+
+        elif method == "Stationarity Test (ADF)":
+
+            result = adfuller(data)
+
+            stat = result[0]
+            p = result[1]
+
+            st.metric("ADF Statistic", round(stat,4))
+            st.metric("p-value", round(p,4))
+
+            st.markdown("### Critical Values")
+
+            for key,value in result[4].items():
+                st.write(f"{key}: {round(value,4)}")
+
+            if p < 0.05:
+                st.success(
+                    "Interpretation: The series is stationary "
+                    "(reject null hypothesis of unit root)."
+                )
+            else:
+                st.warning(
+                    "Interpretation: The series is non-stationary. "
+                    "Differencing may be required."
+                )
+
+# =====================================================
+# DIFFERENCING
+# =====================================================
+
+        elif method == "Differencing":
+
+            lag = st.slider("Lag",1,10,1)
+
+            diff = data.diff(lag)
+
+            fig, ax = plt.subplots()
+
+            ax.plot(diff)
+
+            ax.set_title("Differenced Series")
+
+            st.pyplot(fig)
+
+            st.info(
+                "Interpretation: Differencing removes trends and helps "
+                "stabilize the mean of the time series."
+            )
+
+# =====================================================
+# AUTOCORRELATION FUNCTION
+# =====================================================
+
+        elif method == "Autocorrelation (ACF)":
+
+            fig, ax = plt.subplots()
+
+            plot_acf(data,ax=ax)
+
+            st.pyplot(fig)
+
+            st.info(
+                "Interpretation: ACF shows correlation between "
+                "observations at different time lags."
+            )
+
+# =====================================================
+# PARTIAL AUTOCORRELATION FUNCTION
+# =====================================================
+
+        elif method == "Partial Autocorrelation (PACF)":
+
+            fig, ax = plt.subplots()
+
+            plot_pacf(data,ax=ax)
+
+            st.pyplot(fig)
+
+            st.info(
+                "Interpretation: PACF identifies the direct relationship "
+                "between observations at different lags."
+            )
+
+# =====================================================
+# SEASONAL DECOMPOSITION
+# =====================================================
+
+        elif method == "Seasonal Decomposition":
+
+            period = st.slider("Seasonal Period",2,24,12)
+
+            decomposition = seasonal_decompose(data,period=period)
+
+            fig = decomposition.plot()
+
+            st.pyplot(fig)
+
+            st.info(
+                "Interpretation: Decomposition separates the series into "
+                "trend, seasonal, and residual components."
+            )
+            
 # =====================================================
 # QUALITY CONTROL
 # =====================================================
