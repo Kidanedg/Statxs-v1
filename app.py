@@ -422,7 +422,6 @@ if df is not None:
                             st.text(model.summary())
 
                             st.info("Interpretation: coefficients represent change in log-odds.")
-if df is not None:
     # =====================================================
     # POISSON REGRESSION
     # =====================================================
@@ -530,7 +529,7 @@ if df is not None:
                     st.text(final_model.summary())
 
                     st.info(interpret_r2(final_model.rsquared))
-if df is not None:
+
 # =====================================================
 # CHI-SQUARE TESTS
 # =====================================================
@@ -696,8 +695,6 @@ if df is not None:
                         st.success("Conclusion: Distributions differ across populations.")
                     else:
                         st.warning("Conclusion: Distributions are homogeneous across groups.")
-
-if df is not None:
 
 
 # =====================================================
