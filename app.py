@@ -14,11 +14,85 @@ import statsmodels.formula.api as smf
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
-st.set_page_config(page_title="StatX", layout="wide")
+import streamlit as st
 
-st.title("StatX Scientific Statistical Platform")
+# =====================================================
+# PAGE CONFIG
+# =====================================================
 
-st.write("Upload a dataset and perform statistical analysis with automatic interpretation.")
+st.set_page_config(
+    page_title="StatX Statistical WebLab",
+    layout="wide",
+    page_icon="📊"
+)
+
+# =====================================================
+# CUSTOM STYLE
+# =====================================================
+
+st.markdown("""
+<style>
+
+.main-title{
+    font-size:60px;
+    font-weight:800;
+    text-align:center;
+    color:#cc0000;
+}
+
+.subtitle{
+    font-size:28px;
+    text-align:center;
+    color:black;
+    font-weight:600;
+}
+
+.description{
+    text-align:center;
+    font-size:20px;
+    color:#444;
+    padding-top:10px;
+}
+
+.divider{
+    height:4px;
+    background-color:#cc0000;
+    border-radius:5px;
+    margin-top:10px;
+    margin-bottom:30px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# =====================================================
+# FRONT PAGE
+# =====================================================
+
+st.markdown('<div class="main-title">StatX</div>', unsafe_allow_html=True)
+
+st.markdown(
+    '<div class="subtitle">StatX Statistical WebLab Software</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div class="description">
+
+    A scientific statistical computing platform designed for  
+    <b>data analysis, modeling, and intelligent statistical discovery.</b>
+
+    Upload a dataset and perform statistical analysis with  
+    <b>automatic interpretation and visualization.</b>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # =====================================================
 # =====================================================
