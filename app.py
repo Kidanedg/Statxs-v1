@@ -15,12 +15,17 @@ import statsmodels.formula.api as smf
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
+# Time Series imports
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.seasonal import seasonal_decompose
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
 
 st.set_page_config(
-    page_title="StatX Statistical WebLab Software",
+    page_title="StatX Statistical WebLab",
     page_icon="📊",
     layout="wide"
 )
@@ -29,33 +34,29 @@ st.set_page_config(
 # HEADER
 # =====================================================
 
-st.title("StatX")
-st.subheader("Statistical WebLab Software")
-
+st.title("📊 StatX Statistical WebLab")
 st.markdown(
 """
-A scientific environment for **statistical computing,
-data analysis and visualization**.
+### Scientific Platform for Statistical Computing
+
+StatX provides a modern environment for:
+
+• Data Analysis  
+• Statistical Modeling  
+• Scientific Visualization  
+• Advanced Research Methods
 """
 )
 
 # =====================================================
-# COPYRIGHT
+# SIDEBAR
 # =====================================================
 
-st.markdown(
-"""
----
-© 2024–2026 **Dr. Kidane Desta**  
-Founder of **StatX Software**
-"""
-)
+st.sidebar.title("StatX Control Panel")
 
 # =====================================================
 # DATA UPLOAD
 # =====================================================
-
-st.sidebar.header("Dataset Manager")
 
 uploaded = st.sidebar.file_uploader(
     "Upload Dataset",
@@ -64,43 +65,38 @@ uploaded = st.sidebar.file_uploader(
 
 df = None
 
-# =====================================================
-# LOAD DATA
-# =====================================================
-
 if uploaded:
 
     try:
 
-        file_name = uploaded.name.lower()
+        name = uploaded.name.lower()
 
-        if file_name.endswith(".csv"):
+        if name.endswith(".csv"):
             df = pd.read_csv(uploaded)
 
-        elif file_name.endswith((".xlsx",".xls")):
+        elif name.endswith((".xlsx",".xls")):
             df = pd.read_excel(uploaded)
 
-        elif file_name.endswith(".txt"):
+        elif name.endswith(".txt"):
             df = pd.read_csv(uploaded,sep=None,engine="python")
 
-        elif file_name.endswith(".json"):
+        elif name.endswith(".json"):
             df = pd.read_json(uploaded)
 
-        elif file_name.endswith(".parquet"):
+        elif name.endswith(".parquet"):
             df = pd.read_parquet(uploaded)
 
-        elif file_name.endswith(".dta"):
+        elif name.endswith(".dta"):
             df = pd.read_stata(uploaded)
 
-        elif file_name.endswith(".sav"):
+        elif name.endswith(".sav"):
             df = pd.read_spss(uploaded)
 
-        st.sidebar.success("Dataset Loaded")
+        st.sidebar.success("Dataset Loaded Successfully")
 
     except Exception as e:
 
-        st.sidebar.error(f"Error loading dataset: {e}")
-
+        st.sidebar.error(f"Loading Error: {e}")
 
 # =====================================================
 # DATASET OVERVIEW
@@ -108,64 +104,42 @@ if uploaded:
 
 if df is not None:
 
-    st.subheader("Dataset Overview")
+    st.subheader("📑 Dataset Overview")
 
-    col1,col2,col3 = st.columns(3)
+    c1,c2,c3 = st.columns(3)
 
-    col1.metric("Rows",df.shape[0])
-    col2.metric("Columns",df.shape[1])
-    col3.metric("Missing Values",df.isna().sum().sum())
+    c1.metric("Rows", df.shape[0])
+    c2.metric("Columns", df.shape[1])
+    c3.metric("Missing Values", df.isna().sum().sum())
 
     st.divider()
 
     st.subheader("Data Preview")
-    st.dataframe(df.head(20))
+    st.dataframe(df.head(20), use_container_width=True)
 
     st.divider()
 
-    info_df = pd.DataFrame({
-        "Column":df.columns,
-        "Type":df.dtypes.astype(str),
-        "Missing":df.isna().sum().values
+    info = pd.DataFrame({
+        "Column": df.columns,
+        "Type": df.dtypes.astype(str),
+        "Missing": df.isna().sum()
     })
 
     st.subheader("Column Information")
-    st.dataframe(info_df)
-    
-# =====================================================
-# INTERPRETATION FUNCTIONS
-# =====================================================
+    st.dataframe(info, use_container_width=True)
 
-def interpret_p(p):
-
-    if p < 0.01:
-        return "Strong evidence against H0"
-    elif p < 0.05:
-        return "Statistically significant"
-    else:
-        return "Not statistically significant"
-
-
-def interpret_r2(r2):
-
-    if r2 > 0.75:
-        return "Very strong model fit"
-    elif r2 > 0.50:
-        return "Moderate model fit"
-    elif r2 > 0.25:
-        return "Weak model fit"
-    else:
-        return "Very weak model fit"
-
-
-# =====================================================
-# ANALYSIS MENU
-# =====================================================
+    # =====================================================
+    # VARIABLE TYPES
+    # =====================================================
 
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
     categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
 
-    st.sidebar.header("Analysis Modules")
+    # =====================================================
+    # ANALYSIS MENU
+    # =====================================================
+
+    st.sidebar.subheader("Analysis Modules")
 
     analysis_category = st.sidebar.selectbox(
         "Select Module",
@@ -188,8 +162,6 @@ def interpret_r2(r2):
             "Quality Control"
         ]
     )
-
-
 # =====================================================
 # DESCRIPTIVE STATISTICS
 # =====================================================
