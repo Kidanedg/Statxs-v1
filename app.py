@@ -1076,19 +1076,566 @@ elif analysis_category == "Time Series":
             st.pyplot(fig)
 
             st.info("Interpretation: Decomposition separates trend, seasonal, and residual components.")
-   
+
+# =====================================================
+# ANOVA
+# =====================================================
+
+elif analysis_category == "ANOVA":
+
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+
+    st.subheader("📊 Analysis of Variance (ANOVA)")
+
+    anova_type = st.selectbox(
+        "ANOVA Type",
+        ["One-Way ANOVA", "Two-Way ANOVA"]
+    )
+
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
+
+# -----------------------------------------------------
+# ONE WAY ANOVA
+# -----------------------------------------------------
+
+    if anova_type == "One-Way ANOVA":
+
+        response = st.selectbox("Response Variable", numeric_cols)
+        factor = st.selectbox("Factor Variable", categorical_cols)
+
+        if st.button("Run One-Way ANOVA"):
+
+            model = ols(f"{response} ~ C({factor})", data=df).fit()
+            table = sm.stats.anova_lm(model, typ=2)
+
+            st.write("### ANOVA Table")
+            st.dataframe(table)
+
+            p = table["PR(>F)"][0]
+
+            if p < 0.05:
+
+                st.success(
+                    "Interpretation: There is a statistically significant difference between group means."
+                )
+
+            else:
+
+                st.info(
+                    "Interpretation: No statistically significant difference between group means."
+                )
+
+# -----------------------------------------------------
+# TWO WAY ANOVA
+# -----------------------------------------------------
+
+    elif anova_type == "Two-Way ANOVA":
+
+        response = st.selectbox("Response Variable", numeric_cols)
+        factor1 = st.selectbox("Factor A", categorical_cols)
+        factor2 = st.selectbox("Factor B", categorical_cols)
+
+        if st.button("Run Two-Way ANOVA"):
+
+            formula = f"{response} ~ C({factor1}) + C({factor2}) + C({factor1}):C({factor2})"
+
+            model = ols(formula, data=df).fit()
+
+            table = sm.stats.anova_lm(model, typ=2)
+
+            st.write("### Two-Way ANOVA Table")
+            st.dataframe(table)
+
+            st.markdown("### Interpretation")
+
+            for factor in table.index:
+
+                if factor != "Residual":
+
+                    p = table.loc[factor, "PR(>F)"]
+
+                    if p < 0.05:
+
+                        st.success(f"{factor} has a significant effect (p < 0.05)")
+
+                    else:
+
+                        st.info(f"{factor} is not statistically significant")
+
+# =====================================================
+# DESIGN OF EXPERIMENTS
+# =====================================================
+
+elif analysis_category == "Design of Experiments (DOE)":
+
+    st.subheader("🧪 Design of Experiments")
+
+    doe_type = st.selectbox(
+        "Experimental Design",
+        [
+            "Completely Randomized Design (CRD)",
+            "Randomized Block Design (RBD)"
+        ]
+    )
+
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
+
+# -----------------------------------------------------
+# CRD
+# -----------------------------------------------------
+
+    if doe_type == "Completely Randomized Design (CRD)":
+
+        response = st.selectbox("Response Variable", numeric_cols)
+        treatment = st.selectbox("Treatment Factor", categorical_cols)
+
+        if st.button("Run CRD Analysis"):
+
+            model = ols(f"{response} ~ C({treatment})", data=df).fit()
+            table = sm.stats.anova_lm(model, typ=2)
+
+            st.write(table)
+
+            p = table["PR(>F)"][0]
+
+            if p < 0.05:
+
+                st.success("Treatments significantly affect the response.")
+
+            else:
+
+                st.info("No significant treatment effect detected.")
+
+# -----------------------------------------------------
+# RBD
+# -----------------------------------------------------
+
+    elif doe_type == "Randomized Block Design (RBD)":
+
+        response = st.selectbox("Response Variable", numeric_cols)
+        treatment = st.selectbox("Treatment Factor", categorical_cols)
+        block = st.selectbox("Block Factor", categorical_cols)
+
+        if st.button("Run RBD Analysis"):
+
+            formula = f"{response} ~ C({treatment}) + C({block})"
+
+            model = ols(formula, data=df).fit()
+            table = sm.stats.anova_lm(model, typ=2)
+
+            st.write(table)
+
+            st.info("Interpretation: Tests treatment effects while controlling block variability.")
+
+# =====================================================
+# MULTIVARIATE ANALYSIS
+# =====================================================
+
+elif analysis_category == "Multivariate Analysis":
+
+    from sklearn.decomposition import PCA, FactorAnalysis
+    from sklearn.cluster import KMeans
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+    from sklearn.preprocessing import StandardScaler
+
+    st.subheader("📊 Multivariate Statistical Methods")
+
+    method = st.selectbox(
+        "Select Method",
+        [
+            "Principal Component Analysis (PCA)",
+            "Factor Analysis",
+            "Cluster Analysis (K-Means)",
+            "Discriminant Analysis"
+        ]
+    )
+
+    numeric_data = df.select_dtypes(include=np.number).dropna()
+
+    if numeric_data.shape[1] < 2:
+        st.warning("Multivariate methods require at least two numeric variables.")
+        st.stop()
+
+    scaler = StandardScaler()
+    X = scaler.fit_transform(numeric_data)
+
+# ------------------------------
+# PCA
+# ------------------------------
+
+    if method == "Principal Component Analysis (PCA)":
+
+        pca = PCA()
+        components = pca.fit_transform(X)
+
+        st.write("### Explained Variance Ratio")
+        st.write(pca.explained_variance_ratio_)
+
+        fig, ax = plt.subplots()
+        ax.scatter(components[:,0], components[:,1])
+        ax.set_title("PCA Score Plot")
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: PCA reduces dimensionality by transforming variables "
+        "into principal components that explain maximum variance."
+        )
+
+# ------------------------------
+# FACTOR ANALYSIS
+# ------------------------------
+
+    elif method == "Factor Analysis":
+
+        n_factors = st.slider("Number of Factors",1,5,2)
+
+        fa = FactorAnalysis(n_components=n_factors)
+        factors = fa.fit_transform(X)
+
+        st.write("Factor Loadings")
+        st.write(fa.components_)
+
+        st.info(
+        "Interpretation: Factor analysis identifies latent variables "
+        "that explain correlations among observed variables."
+        )
+
+# ------------------------------
+# CLUSTERING
+# ------------------------------
+
+    elif method == "Cluster Analysis (K-Means)":
+
+        k = st.slider("Number of Clusters",2,10,3)
+
+        model = KMeans(n_clusters=k)
+        clusters = model.fit_predict(X)
+
+        fig, ax = plt.subplots()
+        ax.scatter(X[:,0], X[:,1], c=clusters)
+        ax.set_title("Cluster Plot")
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Clustering groups observations with similar characteristics."
+        )
+
+# ------------------------------
+# DISCRIMINANT ANALYSIS
+# ------------------------------
+
+    elif method == "Discriminant Analysis":
+
+        target = st.selectbox("Target Group Variable", categorical_cols)
+
+        X = df[numeric_cols].dropna()
+        y = df[target].loc[X.index]
+
+        lda = LinearDiscriminantAnalysis()
+        lda.fit(X,y)
+
+        st.write("Classification Accuracy:", lda.score(X,y))
+
+        st.info(
+        "Interpretation: Discriminant analysis identifies variables "
+        "that best separate predefined groups."
+        )
+
+# =====================================================
+# BIOSTATISTICS
+# =====================================================
+
+elif analysis_category == "Biostatistics":
+
+    st.subheader("🧬 Biostatistics Analysis")
+
+    method = st.selectbox(
+        "Select Method",
+        [
+            "Relative Risk",
+            "Odds Ratio",
+            "Kaplan-Meier Survival Estimate"
+        ]
+    )
+
+# ------------------------------
+# RELATIVE RISK
+# ------------------------------
+
+    if method == "Relative Risk":
+
+        a = st.number_input("Exposed + Disease",10)
+        b = st.number_input("Exposed + No Disease",20)
+        c = st.number_input("Unexposed + Disease",5)
+        d = st.number_input("Unexposed + No Disease",30)
+
+        rr = (a/(a+b)) / (c/(c+d))
+
+        st.metric("Relative Risk", round(rr,4))
+
+        if rr > 1:
+            st.warning("Exposure increases disease risk.")
+        else:
+            st.success("Exposure does not increase risk.")
+
+# ------------------------------
+# ODDS RATIO
+# ------------------------------
+
+    elif method == "Odds Ratio":
+
+        a = st.number_input("Case + Exposure",10)
+        b = st.number_input("Control + Exposure",20)
+        c = st.number_input("Case + No Exposure",5)
+        d = st.number_input("Control + No Exposure",30)
+
+        OR = (a*d)/(b*c)
+
+        st.metric("Odds Ratio", round(OR,4))
+
+        st.info(
+        "Interpretation: Odds ratio measures association "
+        "between exposure and outcome."
+        )
+
+# ------------------------------
+# SURVIVAL ANALYSIS
+# ------------------------------
+
+    elif method == "Kaplan-Meier Survival Estimate":
+
+        st.info("Upload survival time and event variables.")
+
+        time_var = st.selectbox("Survival Time Variable", numeric_cols)
+        event_var = st.selectbox("Event Indicator (0/1)", numeric_cols)
+
+        from lifelines import KaplanMeierFitter
+
+        kmf = KaplanMeierFitter()
+        kmf.fit(df[time_var], df[event_var])
+
+        fig, ax = plt.subplots()
+        kmf.plot(ax=ax)
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Kaplan-Meier estimates survival probability over time."
+        )
+
+# =====================================================
+# BIOINFORMATICS
+# =====================================================
+
+elif analysis_category == "Bioinformatics":
+
+    st.subheader("🧬 Bioinformatics Tools")
+
+    method = st.selectbox(
+        "Bioinformatics Method",
+        [
+            "Gene Expression Heatmap",
+            "Sequence Length Analysis"
+        ]
+    )
+
+    if method == "Gene Expression Heatmap":
+
+        numeric_data = df.select_dtypes(include=np.number)
+
+        fig, ax = plt.subplots()
+
+        sns.heatmap(numeric_data.corr(), cmap="coolwarm")
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Heatmap reveals correlation patterns "
+        "between gene expression variables."
+        )
+
+    elif method == "Sequence Length Analysis":
+
+        st.info("Analyze length distribution of genetic sequences.")
+
+        seq_col = st.selectbox("Sequence Column", df.columns)
+
+        lengths = df[seq_col].astype(str).apply(len)
+
+        fig, ax = plt.subplots()
+
+        sns.histplot(lengths)
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Shows distribution of sequence lengths."
+        )
+
+# =====================================================
+# BIOMETRICS
+# =====================================================
+
+elif analysis_category == "Biometrics":
+
+    st.subheader("🔐 Biometric Statistical Analysis")
+
+    method = st.selectbox(
+        "Biometric Method",
+        [
+            "Classification Accuracy",
+            "Similarity Matrix"
+        ]
+    )
+
+    if method == "Classification Accuracy":
+
+        from sklearn.metrics import accuracy_score
+
+        y_true = st.text_input("True Labels (comma separated)")
+        y_pred = st.text_input("Predicted Labels (comma separated)")
+
+        if st.button("Compute Accuracy"):
+
+            y_true = y_true.split(",")
+            y_pred = y_pred.split(",")
+
+            acc = accuracy_score(y_true,y_pred)
+
+            st.metric("Accuracy",round(acc,4))
+
+    elif method == "Similarity Matrix":
+
+        numeric_data = df.select_dtypes(include=np.number)
+
+        corr = numeric_data.corr()
+
+        fig, ax = plt.subplots()
+
+        sns.heatmap(corr)
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Similarity matrix reveals relationships "
+        "between biometric features."
+        )
+
+# =====================================================
+# BIOMOLECULAR MODELING
+# =====================================================
+
+elif analysis_category == "Biomolecular Modeling":
+
+    st.subheader("🧪 Biomolecular Modeling")
+
+    method = st.selectbox(
+        "Modeling Tool",
+        [
+            "Distance Matrix",
+            "Molecular Descriptor Correlation"
+        ]
+    )
+
+    numeric_data = df.select_dtypes(include=np.number)
+
+    if method == "Distance Matrix":
+
+        from scipy.spatial.distance import pdist, squareform
+
+        dist = squareform(pdist(numeric_data))
+
+        st.write(dist)
+
+        st.info(
+        "Interpretation: Distance matrix measures similarity between molecules."
+        )
+
+    elif method == "Molecular Descriptor Correlation":
+
+        corr = numeric_data.corr()
+
+        fig, ax = plt.subplots()
+
+        sns.heatmap(corr)
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Correlation among molecular descriptors."
+        )
+
+# =====================================================
+# CHEMOINFORMATICS
+# =====================================================
+
+elif analysis_category == "Chemoinformatics":
+
+    st.subheader("⚗ Chemoinformatics Analysis")
+
+    method = st.selectbox(
+        "Chemoinformatics Method",
+        [
+            "Descriptor Correlation",
+            "Molecular Clustering"
+        ]
+    )
+
+    numeric_data = df.select_dtypes(include=np.number)
+
+    if method == "Descriptor Correlation":
+
+        corr = numeric_data.corr()
+
+        fig, ax = plt.subplots()
+
+        sns.heatmap(corr, cmap="coolwarm")
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Shows relationships between chemical descriptors."
+        )
+
+    elif method == "Molecular Clustering":
+
+        k = st.slider("Number of Clusters",2,10,3)
+
+        from sklearn.cluster import KMeans
+
+        model = KMeans(n_clusters=k)
+        clusters = model.fit_predict(numeric_data)
+
+        fig, ax = plt.subplots()
+
+        ax.scatter(numeric_data.iloc[:,0], numeric_data.iloc[:,1], c=clusters)
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Clustering groups chemically similar compounds."
+        )
+
 # =====================================================
 # QUALITY CONTROL
 # =====================================================
 
 elif analysis_category == "Quality Control":
 
-    st.subheader("🏭 Statistical Quality Control")
+    st.subheader("🏭 Statistical Quality Control (SPC)")
 
     method = st.selectbox(
         "Quality Control Method",
         [
-            "Control Chart (Individuals)",
+            "Individuals Control Chart (I Chart)",
+            "Moving Range Chart (MR Chart)",
+            "X-Bar Chart (Subgroup Mean)",
+            "P Chart (Proportion Defective)",
             "Process Capability Analysis"
         ]
     )
@@ -1098,54 +1645,135 @@ elif analysis_category == "Quality Control":
     data = df[var].dropna()
 
     if len(data) < 5:
-        st.warning("At least 5 observations are required for quality control analysis.")
+        st.warning("At least 5 observations are required.")
         st.stop()
 
 # =====================================================
-# CONTROL CHART
+# INDIVIDUALS CONTROL CHART
 # =====================================================
 
-    if method == "Control Chart (Individuals)":
+    if method == "Individuals Control Chart (I Chart)":
 
         mean = np.mean(data)
         std = np.std(data)
 
-        UCL = mean + 3 * std
-        LCL = mean - 3 * std
+        UCL = mean + 3*std
+        LCL = mean - 3*std
 
         fig, ax = plt.subplots()
 
         ax.plot(data, marker="o")
-
-        ax.axhline(mean, linestyle="--", label="Process Mean")
-        ax.axhline(UCL, color="red", label="Upper Control Limit")
-        ax.axhline(LCL, color="red", label="Lower Control Limit")
+        ax.axhline(mean, linestyle="--", label="Mean")
+        ax.axhline(UCL, color="red", label="UCL")
+        ax.axhline(LCL, color="red", label="LCL")
 
         ax.set_title("Individuals Control Chart")
-        ax.set_xlabel("Observation")
-        ax.set_ylabel(var)
 
         ax.legend()
 
         st.pyplot(fig)
 
-        out_of_control = ((data > UCL) | (data < LCL)).sum()
+        out = ((data>UCL)|(data<LCL)).sum()
 
-        st.metric("Out-of-Control Points", int(out_of_control))
+        st.metric("Out of Control Points",int(out))
 
-        if out_of_control > 0:
-
+        if out>0:
             st.warning(
-                "Interpretation: Some observations fall outside the control limits. "
-                "This indicates the process may be **out of statistical control**."
+            "Interpretation: The process shows signals of instability. "
+            "Special causes may be affecting the process."
             )
-
         else:
-
             st.success(
-                "Interpretation: All points lie within the control limits. "
-                "The process appears **statistically stable**."
+            "Interpretation: The process appears statistically stable."
             )
+
+# =====================================================
+# MOVING RANGE CHART
+# =====================================================
+
+    elif method == "Moving Range Chart (MR Chart)":
+
+        mr = np.abs(np.diff(data))
+
+        MRbar = np.mean(mr)
+
+        UCL = 3.267 * MRbar
+
+        fig, ax = plt.subplots()
+
+        ax.plot(mr, marker="o")
+
+        ax.axhline(MRbar, linestyle="--", label="Mean MR")
+        ax.axhline(UCL, color="red", label="UCL")
+
+        ax.set_title("Moving Range Chart")
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: Moving Range chart evaluates variability between consecutive observations."
+        )
+
+# =====================================================
+# XBAR CHART
+# =====================================================
+
+    elif method == "X-Bar Chart (Subgroup Mean)":
+
+        subgroup = st.slider("Subgroup Size",2,10,5)
+
+        groups = [data[i:i+subgroup] for i in range(0,len(data),subgroup)]
+
+        means = [np.mean(g) for g in groups if len(g)==subgroup]
+
+        xbar = np.mean(means)
+        std = np.std(means)
+
+        UCL = xbar + 3*std
+        LCL = xbar - 3*std
+
+        fig, ax = plt.subplots()
+
+        ax.plot(means, marker="o")
+
+        ax.axhline(xbar,label="Mean")
+        ax.axhline(UCL,color="red",label="UCL")
+        ax.axhline(LCL,color="red",label="LCL")
+
+        ax.set_title("X-Bar Chart")
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+        st.info(
+        "Interpretation: X-Bar chart monitors changes in process mean across subgroups."
+        )
+
+# =====================================================
+# P CHART
+# =====================================================
+
+    elif method == "P Chart (Proportion Defective)":
+
+        defects = st.number_input("Number of Defects",10)
+        n = st.number_input("Sample Size",100)
+
+        p = defects/n
+
+        UCL = p + 3*np.sqrt(p*(1-p)/n)
+        LCL = max(0,p - 3*np.sqrt(p*(1-p)/n))
+
+        st.metric("Proportion Defective",round(p,4))
+
+        st.write("UCL:",round(UCL,4))
+        st.write("LCL:",round(LCL,4))
+
+        st.info(
+        "Interpretation: P chart monitors proportion of defective items."
+        )
 
 # =====================================================
 # PROCESS CAPABILITY
@@ -1155,25 +1783,34 @@ elif analysis_category == "Quality Control":
 
         st.markdown("### Specification Limits")
 
-        LSL = st.number_input("Lower Specification Limit (LSL)", value=0.0)
-        USL = st.number_input("Upper Specification Limit (USL)", value=1.0)
+        LSL = st.number_input("Lower Spec Limit",0.0)
+        USL = st.number_input("Upper Spec Limit",1.0)
 
-        if USL <= LSL:
-
-            st.error("USL must be greater than LSL.")
+        if USL<=LSL:
+            st.error("USL must be greater than LSL")
             st.stop()
 
         mean = np.mean(data)
         std = np.std(data)
 
-        Cp = (USL - LSL) / (6 * std)
+        Cp = (USL-LSL)/(6*std)
 
-        Cpk = min((USL - mean) / (3 * std), (mean - LSL) / (3 * std))
+        Cpk = min((USL-mean)/(3*std),(mean-LSL)/(3*std))
 
-        col1, col2 = st.columns(2)
+        Pp = (USL-LSL)/(6*np.std(data,ddof=1))
 
-        col1.metric("Cp", round(Cp, 4))
-        col2.metric("Cpk", round(Cpk, 4))
+        Ppk = min((USL-mean)/(3*np.std(data,ddof=1)),
+                  (mean-LSL)/(3*np.std(data,ddof=1)))
+
+        col1,col2 = st.columns(2)
+
+        col1.metric("Cp",round(Cp,4))
+        col2.metric("Cpk",round(Cpk,4))
+
+        col3,col4 = st.columns(2)
+
+        col3.metric("Pp",round(Pp,4))
+        col4.metric("Ppk",round(Ppk,4))
 
 # =====================================================
 # HISTOGRAM
@@ -1181,12 +1818,12 @@ elif analysis_category == "Quality Control":
 
         fig, ax = plt.subplots()
 
-        sns.histplot(data, kde=True)
+        sns.histplot(data,kde=True)
 
-        ax.axvline(LSL, color="red", linestyle="--", label="LSL")
-        ax.axvline(USL, color="red", linestyle="--", label="USL")
+        ax.axvline(LSL,color="red",linestyle="--",label="LSL")
+        ax.axvline(USL,color="red",linestyle="--",label="USL")
 
-        ax.set_title("Process Distribution with Specification Limits")
+        ax.set_title("Process Distribution")
 
         ax.legend()
 
@@ -1196,22 +1833,19 @@ elif analysis_category == "Quality Control":
 # INTERPRETATION
 # =====================================================
 
-        if Cp >= 1.33 and Cpk >= 1.33:
-
+        if Cpk>=1.33:
             st.success(
-                "Interpretation: The process is **capable** and meets quality specifications."
+            "Interpretation: The process is capable and meets quality requirements."
             )
 
-        elif Cp >= 1 and Cpk >= 1:
-
+        elif Cpk>=1:
             st.info(
-                "Interpretation: The process is **marginally capable**, but improvements may be needed."
+            "Interpretation: The process is marginally capable. Improvements recommended."
             )
 
         else:
-
             st.warning(
-                "Interpretation: The process is **not capable** of meeting specifications consistently."
+            "Interpretation: The process is not capable of meeting specifications."
             )
 
 # =====================================================
@@ -1221,3 +1855,4 @@ elif analysis_category == "Quality Control":
 else:
 
     st.info("Upload a dataset to begin statistical analysis.")
+
