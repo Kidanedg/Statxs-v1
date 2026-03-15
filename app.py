@@ -318,30 +318,398 @@ if df is not None:
 # GRAPHICS
 # =====================================================
 
-    elif analysis_category == "Graphics":
+elif analysis_category == "Graphics":
 
-        st.subheader("Visualization")
+    st.subheader("📊 Data Visualization")
 
-        plot = st.selectbox(
-            "Plot Type",
-            ["Histogram","Boxplot","Scatter","Correlation Heatmap"]
-        )
+    plot = st.selectbox(
+        "Plot Type",
+        [
+            "Histogram",
+            "Density Plot",
+            "Boxplot",
+            "Violin Plot",
+            "Scatter Plot",
+            "Scatter with Regression",
+            "Bar Chart",
+            "Line Chart",
+            "Count Plot",
+            "Pair Plot",
+            "Correlation Heatmap"
+        ]
+    )
 
-        if plot == "Histogram":
+    # -----------------------------
+    # HISTOGRAM
+    # -----------------------------
 
-            var = st.selectbox("Variable", numeric_cols)
+    if plot == "Histogram":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.histplot(df[var], kde=True)
+        st.pyplot(fig)
+
+    # -----------------------------
+    # DENSITY PLOT
+    # -----------------------------
+
+    elif plot == "Density Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.kdeplot(df[var], fill=True)
+        st.pyplot(fig)
+
+    # -----------------------------
+    # BOXPLOT
+    # -----------------------------
+
+    elif plot == "Boxplot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.boxplot(y=df[var])
+        st.pyplot(fig)
+
+    # -----------------------------
+    # VIOLIN PLOT
+    # -----------------------------
+
+    elif plot == "Violin Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.violinplot(y=df[var])
+        st.pyplot(fig)
+
+    # -----------------------------
+    # SCATTER
+    # -----------------------------
+
+    elif plot == "Scatter Plot":
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.scatterplot(x=df[x], y=df[y])
+        st.pyplot(fig)
+
+    # -----------------------------
+    # SCATTER + REGRESSION
+    # -----------------------------
+
+    elif plot == "Scatter with Regression":
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        sns.regplot(x=df[x], y=df[y])
+        st.pyplot(fig)
+
+    # -----------------------------
+    # BAR CHART
+    # -----------------------------
+
+    elif plot == "Bar Chart":
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+
+        if len(cat_cols) > 0:
+
+            cat = st.selectbox("Category", cat_cols)
 
             fig, ax = plt.subplots()
-            sns.histplot(df[var], kde=True)
+            df[cat].value_counts().plot(kind="bar", ax=ax)
             st.pyplot(fig)
 
-        elif plot == "Boxplot":
+        else:
+            st.warning("No categorical variables found")
 
-            var = st.selectbox("Variable", numeric_cols)
+    # -----------------------------
+    # LINE CHART
+    # -----------------------------
+
+    elif plot == "Line Chart":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+        ax.plot(df[var])
+        ax.set_title("Line Plot")
+        st.pyplot(fig)
+
+    # -----------------------------
+    # COUNT PLOT
+    # -----------------------------
+
+    elif plot == "Count Plot":
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+
+        if len(cat_cols) > 0:
+
+            var = st.selectbox("Variable", cat_cols)
 
             fig, ax = plt.subplots()
-            sns.boxplot(y=df[var])
+            sns.countplot(x=df[var])
+            plt.xticks(rotation=45)
             st.pyplot(fig)
+
+        else:
+            st.warning("No categorical variables found")
+
+    # -----------------------------
+    # PAIR PLOT
+    # -----------------------------
+
+    elif plot == "Pair Plot":
+
+        st.write("Pairwise relationships between numeric variables")
+
+        fig = sns.pairplot(df[numeric_cols])
+        st.pyplot(fig)
+
+    # -----------------------------
+    # CORRELATION HEATMAP
+    # -----------------------------
+
+    elif plot == "Correlation Heatmap":
+
+        corr = df[numeric_cols].corr()
+
+        fig, ax = plt.subplots()
+        sns.heatmap(corr, annot=True, cmap="coolwarm")
+        st.pyplot(fig)
+
+# =====================================================
+# HYPOTHESIS TESTING & ESTIMATION
+# =====================================================
+
+elif analysis_category == "Hypothesis Testing & Estimation":
+
+    st.subheader("📊 Hypothesis Testing and Estimation")
+
+    test_type = st.selectbox(
+        "Select Analysis",
+        [
+            "One-Sample t-Test",
+            "Two-Sample t-Test",
+            "Paired t-Test",
+            "Proportion Test",
+            "Chi-Square Test",
+            "One-Way ANOVA",
+            "Confidence Interval (Mean)",
+            "Confidence Interval (Proportion)"
+        ]
+    )
+
+# =====================================================
+# ONE SAMPLE T TEST
+# =====================================================
+
+    if test_type == "One-Sample t-Test":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        mu = st.number_input("Hypothesized Mean", value=0.0)
+
+        alpha = st.slider("Significance Level", 0.01,0.10,0.05)
+
+        data = df[var].dropna()
+
+        stat, p = stats.ttest_1samp(data, mu)
+
+        st.write("### Results")
+
+        st.write("t statistic:", stat)
+        st.write("p-value:", p)
+
+        if p < alpha:
+            st.success("Reject H₀: The sample mean is significantly different from the hypothesized mean.")
+        else:
+            st.info("Fail to reject H₀: No significant difference detected.")
+
+# =====================================================
+# TWO SAMPLE T TEST
+# =====================================================
+
+    elif test_type == "Two-Sample t-Test":
+
+        var = st.selectbox("Numeric Variable", numeric_cols)
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+
+        group = st.selectbox("Grouping Variable", cat_cols)
+
+        groups = df[group].unique()
+
+        g1 = st.selectbox("Group 1", groups)
+        g2 = st.selectbox("Group 2", groups)
+
+        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+
+        data1 = df[df[group]==g1][var].dropna()
+        data2 = df[df[group]==g2][var].dropna()
+
+        stat,p = stats.ttest_ind(data1,data2)
+
+        st.write("### Results")
+        st.write("t statistic:", stat)
+        st.write("p-value:", p)
+
+        if p < alpha:
+            st.success("Reject H₀: The group means are significantly different.")
+        else:
+            st.info("Fail to reject H₀: No significant difference between groups.")
+
+# =====================================================
+# PAIRED T TEST
+# =====================================================
+
+    elif test_type == "Paired t-Test":
+
+        var1 = st.selectbox("Variable 1", numeric_cols)
+        var2 = st.selectbox("Variable 2", numeric_cols)
+
+        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+
+        data1 = df[var1].dropna()
+        data2 = df[var2].dropna()
+
+        stat,p = stats.ttest_rel(data1,data2)
+
+        st.write("### Results")
+
+        st.write("t statistic:", stat)
+        st.write("p-value:", p)
+
+        if p < alpha:
+            st.success("Reject H₀: Significant difference between paired samples.")
+        else:
+            st.info("Fail to reject H₀: No significant difference detected.")
+
+# =====================================================
+# PROPORTION TEST
+# =====================================================
+
+    elif test_type == "Proportion Test":
+
+        successes = st.number_input("Number of Successes", value=10)
+        n = st.number_input("Sample Size", value=50)
+
+        p0 = st.number_input("Hypothesized Proportion", value=0.5)
+
+        alpha = st.slider("Significance Level",0.01,0.10,0.05)
+
+        stat,p = stats.binom_test(successes,n,p0)
+
+        st.write("p-value:",p)
+
+        if p < alpha:
+            st.success("Reject H₀: Proportion differs from hypothesized value.")
+        else:
+            st.info("Fail to reject H₀.")
+
+# =====================================================
+# CHI SQUARE TEST
+# =====================================================
+
+    elif test_type == "Chi-Square Test":
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+
+        var1 = st.selectbox("Variable 1", cat_cols)
+        var2 = st.selectbox("Variable 2", cat_cols)
+
+        table = pd.crosstab(df[var1],df[var2])
+
+        stat,p,_,_ = stats.chi2_contingency(table)
+
+        st.write("Contingency Table")
+        st.dataframe(table)
+
+        st.write("Chi-square statistic:", stat)
+        st.write("p-value:", p)
+
+        if p < 0.05:
+            st.success("Reject H₀: Variables are associated.")
+        else:
+            st.info("Fail to reject H₀: No significant association.")
+
+# =====================================================
+# ANOVA
+# =====================================================
+
+    elif test_type == "One-Way ANOVA":
+
+        var = st.selectbox("Numeric Variable", numeric_cols)
+
+        cat_cols = df.select_dtypes(include=["object","category"]).columns
+        group = st.selectbox("Grouping Variable", cat_cols)
+
+        groups = df[group].unique()
+
+        data = [df[df[group]==g][var].dropna() for g in groups]
+
+        stat,p = stats.f_oneway(*data)
+
+        st.write("F statistic:", stat)
+        st.write("p-value:", p)
+
+        if p < 0.05:
+            st.success("Reject H₀: At least one group mean differs.")
+        else:
+            st.info("Fail to reject H₀.")
+
+# =====================================================
+# CONFIDENCE INTERVAL MEAN
+# =====================================================
+
+    elif test_type == "Confidence Interval (Mean)":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        conf = st.slider("Confidence Level",0.80,0.99,0.95)
+
+        data = df[var].dropna()
+
+        mean = np.mean(data)
+        sem = stats.sem(data)
+
+        interval = stats.t.interval(conf,len(data)-1,loc=mean,scale=sem)
+
+        st.write("Sample Mean:",mean)
+        st.write("Confidence Interval:",interval)
+
+# =====================================================
+# CONFIDENCE INTERVAL PROPORTION
+# =====================================================
+
+    elif test_type == "Confidence Interval (Proportion)":
+
+        successes = st.number_input("Successes",10)
+        n = st.number_input("Sample Size",50)
+
+        conf = st.slider("Confidence Level",0.80,0.99,0.95)
+
+        p = successes/n
+
+        z = stats.norm.ppf(1-(1-conf)/2)
+
+        se = np.sqrt(p*(1-p)/n)
+
+        lower = p - z*se
+        upper = p + z*se
+
+        st.write("Estimated Proportion:",p)
+        st.write("Confidence Interval:",(lower,upper))    
 
 # =====================================================
 # TIME SERIES
