@@ -1071,50 +1071,143 @@ elif analysis_category == "Time Series":
 # QUALITY CONTROL
 # =====================================================
 
-    elif analysis_category == "Quality Control":
+elif analysis_category == "Quality Control":
 
-        st.subheader("Statistical Quality Control")
+    st.subheader("🏭 Statistical Quality Control")
 
-        method = st.selectbox(
-            "Method",
-            ["Control Chart","Process Capability"]
-        )
+    method = st.selectbox(
+        "Quality Control Method",
+        [
+            "Control Chart (Individuals)",
+            "Process Capability Analysis"
+        ]
+    )
 
-        var = st.selectbox("Process Variable", numeric_cols)
+    var = st.selectbox("Process Variable", numeric_cols)
 
-        data = df[var]
+    data = df[var].dropna()
 
-        if method == "Control Chart":
+    if len(data) < 5:
+        st.warning("At least 5 observations are required for quality control analysis.")
+        st.stop()
 
-            mean = np.mean(data)
-            std = np.std(data)
+# =====================================================
+# CONTROL CHART
+# =====================================================
 
-            UCL = mean + 3*std
-            LCL = mean - 3*std
+    if method == "Control Chart (Individuals)":
 
-            fig, ax = plt.subplots()
+        mean = np.mean(data)
+        std = np.std(data)
 
-            ax.plot(data,marker="o")
-            ax.axhline(mean,label="Mean")
-            ax.axhline(UCL,color="red",label="UCL")
-            ax.axhline(LCL,color="red",label="LCL")
+        UCL = mean + 3 * std
+        LCL = mean - 3 * std
 
-            ax.legend()
+        fig, ax = plt.subplots()
 
-            st.pyplot(fig)
+        ax.plot(data, marker="o")
 
-        elif method == "Process Capability":
+        ax.axhline(mean, linestyle="--", label="Process Mean")
+        ax.axhline(UCL, color="red", label="Upper Control Limit")
+        ax.axhline(LCL, color="red", label="Lower Control Limit")
 
-            LSL = st.number_input("Lower Spec Limit")
-            USL = st.number_input("Upper Spec Limit")
+        ax.set_title("Individuals Control Chart")
+        ax.set_xlabel("Observation")
+        ax.set_ylabel(var)
 
-            mean = np.mean(data)
-            std = np.std(data)
+        ax.legend()
 
-            Cp = (USL-LSL)/(6*std)
+        st.pyplot(fig)
 
-            st.write("Cp:",Cp)
+        out_of_control = ((data > UCL) | (data < LCL)).sum()
+
+        st.metric("Out-of-Control Points", int(out_of_control))
+
+        if out_of_control > 0:
+
+            st.warning(
+                "Interpretation: Some observations fall outside the control limits. "
+                "This indicates the process may be **out of statistical control**."
+            )
+
+        else:
+
+            st.success(
+                "Interpretation: All points lie within the control limits. "
+                "The process appears **statistically stable**."
+            )
+
+# =====================================================
+# PROCESS CAPABILITY
+# =====================================================
+
+    elif method == "Process Capability Analysis":
+
+        st.markdown("### Specification Limits")
+
+        LSL = st.number_input("Lower Specification Limit (LSL)", value=0.0)
+        USL = st.number_input("Upper Specification Limit (USL)", value=1.0)
+
+        if USL <= LSL:
+
+            st.error("USL must be greater than LSL.")
+            st.stop()
+
+        mean = np.mean(data)
+        std = np.std(data)
+
+        Cp = (USL - LSL) / (6 * std)
+
+        Cpk = min((USL - mean) / (3 * std), (mean - LSL) / (3 * std))
+
+        col1, col2 = st.columns(2)
+
+        col1.metric("Cp", round(Cp, 4))
+        col2.metric("Cpk", round(Cpk, 4))
+
+# =====================================================
+# HISTOGRAM
+# =====================================================
+
+        fig, ax = plt.subplots()
+
+        sns.histplot(data, kde=True)
+
+        ax.axvline(LSL, color="red", linestyle="--", label="LSL")
+        ax.axvline(USL, color="red", linestyle="--", label="USL")
+
+        ax.set_title("Process Distribution with Specification Limits")
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+# =====================================================
+# INTERPRETATION
+# =====================================================
+
+        if Cp >= 1.33 and Cpk >= 1.33:
+
+            st.success(
+                "Interpretation: The process is **capable** and meets quality specifications."
+            )
+
+        elif Cp >= 1 and Cpk >= 1:
+
+            st.info(
+                "Interpretation: The process is **marginally capable**, but improvements may be needed."
+            )
+
+        else:
+
+            st.warning(
+                "Interpretation: The process is **not capable** of meeting specifications consistently."
+            )
+
+# =====================================================
+# DATA NOT UPLOADED
+# =====================================================
 
 else:
 
-    st.info("Upload a dataset to begin analysis.")
+    st.info("Upload a dataset to begin statistical analysis.")
