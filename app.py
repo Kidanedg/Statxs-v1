@@ -179,8 +179,6 @@ if uploaded:
 
     except Exception as e:
         st.sidebar.error(f"❌ Error loading dataset: {e}")
-
-
 # =====================================================
 # DATASET DISPLAY PAGE
 # =====================================================
@@ -197,12 +195,16 @@ if df is not None:
 
     st.divider()
 
-    # Preview
+    # -------------------------------------------
+    # DATA PREVIEW
+    # -------------------------------------------
 
     st.markdown("### 🔎 Data Preview")
     st.dataframe(df.head(20), use_container_width=True)
 
-    # Column Types
+    # -------------------------------------------
+    # COLUMN INFORMATION
+    # -------------------------------------------
 
     st.markdown("### 📑 Column Information")
 
@@ -213,6 +215,8 @@ if df is not None:
     })
 
     st.dataframe(info_df, use_container_width=True)
+
+    st.divider()
 
 else:
 
@@ -234,6 +238,7 @@ else:
         """
     )
 
+
 # =====================================================
 # INTERPRETATION FUNCTIONS
 # =====================================================
@@ -241,11 +246,11 @@ else:
 def interpret_p(p):
 
     if p < 0.01:
-        return "Strong evidence against the null hypothesis (p < 0.01). Reject H0."
+        return "Strong evidence against the null hypothesis (p < 0.01). Reject H₀."
     elif p < 0.05:
-        return "Statistically significant at 5% level (p < 0.05). Reject H0."
+        return "Statistically significant at 5% level (p < 0.05). Reject H₀."
     else:
-        return "Not statistically significant (p ≥ 0.05). Fail to reject H0."
+        return "Not statistically significant (p ≥ 0.05). Fail to reject H₀."
 
 
 def interpret_r2(r2):
@@ -259,33 +264,26 @@ def interpret_r2(r2):
     else:
         return "Very weak model fit."
 
+
 # =====================================================
 # MAIN ANALYSIS
 # =====================================================
 
 if df is not None:
 
-    st.subheader("Dataset Preview")
-    st.dataframe(df)
-
     numeric_cols = df.select_dtypes(include=np.number).columns
     categorical_cols = df.select_dtypes(exclude=np.number).columns
 
-    # ============================================
-    # SIDEBAR MENU
-    # ============================================
+    st.sidebar.markdown("## 📊 Analysis Menu")
 
     analysis_category = st.sidebar.selectbox(
-        "Analysis Category",
+        "Select Analysis",
         [
             "Descriptive Statistics",
             "Graphics",
-            "Hypothesis Tests",
-            "ANOVA",
+            "Hypothesis Testing",
             "Regression",
-            "Chi-Square Tests",
-            "Time Series",
-            "Quality Control"
+            "Chi-Square Tests"
         ]
     )
 
@@ -295,11 +293,11 @@ if df is not None:
 
     if analysis_category == "Descriptive Statistics":
 
-        st.subheader("Descriptive Statistics")
+        st.subheader("📑 Descriptive Statistics")
 
-        var = st.selectbox("Variable", numeric_cols)
+        var = st.selectbox("Select Variable", numeric_cols)
 
-        data = df[var]
+        data = df[var].dropna()
 
         summary = pd.DataFrame({
             "Mean":[np.mean(data)],
@@ -314,344 +312,149 @@ if df is not None:
 
         st.table(summary)
 
+
 # =====================================================
 # GRAPHICS
 # =====================================================
 
-elif analysis_category == "Graphics":
+    elif analysis_category == "Graphics":
 
-    st.subheader("📊 Data Visualization")
+        st.subheader("📊 Data Visualization")
 
-    plot = st.selectbox(
-        "Plot Type",
-        [
-            "Histogram",
-            "Density Plot",
-            "Boxplot",
-            "Violin Plot",
-            "Scatter Plot",
-            "Scatter with Regression",
-            "Bar Chart",
-            "Line Chart",
-            "Count Plot",
-            "Pair Plot",
-            "Correlation Heatmap"
-        ]
-    )
+        plot = st.selectbox(
+            "Plot Type",
+            [
+                "Histogram",
+                "Boxplot",
+                "Scatter Plot",
+                "Correlation Heatmap"
+            ]
+        )
 
-    # -----------------------------
-    # HISTOGRAM
-    # -----------------------------
+        if plot == "Histogram":
 
-    if plot == "Histogram":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.histplot(df[var], kde=True)
-        st.pyplot(fig)
-
-    # -----------------------------
-    # DENSITY PLOT
-    # -----------------------------
-
-    elif plot == "Density Plot":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.kdeplot(df[var], fill=True)
-        st.pyplot(fig)
-
-    # -----------------------------
-    # BOXPLOT
-    # -----------------------------
-
-    elif plot == "Boxplot":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.boxplot(y=df[var])
-        st.pyplot(fig)
-
-    # -----------------------------
-    # VIOLIN PLOT
-    # -----------------------------
-
-    elif plot == "Violin Plot":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.violinplot(y=df[var])
-        st.pyplot(fig)
-
-    # -----------------------------
-    # SCATTER
-    # -----------------------------
-
-    elif plot == "Scatter Plot":
-
-        x = st.selectbox("X Variable", numeric_cols)
-        y = st.selectbox("Y Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.scatterplot(x=df[x], y=df[y])
-        st.pyplot(fig)
-
-    # -----------------------------
-    # SCATTER + REGRESSION
-    # -----------------------------
-
-    elif plot == "Scatter with Regression":
-
-        x = st.selectbox("X Variable", numeric_cols)
-        y = st.selectbox("Y Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        sns.regplot(x=df[x], y=df[y])
-        st.pyplot(fig)
-
-    # -----------------------------
-    # BAR CHART
-    # -----------------------------
-
-    elif plot == "Bar Chart":
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-
-        if len(cat_cols) > 0:
-
-            cat = st.selectbox("Category", cat_cols)
+            var = st.selectbox("Variable", numeric_cols)
 
             fig, ax = plt.subplots()
-            df[cat].value_counts().plot(kind="bar", ax=ax)
+            sns.histplot(df[var], kde=True)
             st.pyplot(fig)
 
-        else:
-            st.warning("No categorical variables found")
+        elif plot == "Boxplot":
 
-    # -----------------------------
-    # LINE CHART
-    # -----------------------------
-
-    elif plot == "Line Chart":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-        ax.plot(df[var])
-        ax.set_title("Line Plot")
-        st.pyplot(fig)
-
-    # -----------------------------
-    # COUNT PLOT
-    # -----------------------------
-
-    elif plot == "Count Plot":
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-
-        if len(cat_cols) > 0:
-
-            var = st.selectbox("Variable", cat_cols)
+            var = st.selectbox("Variable", numeric_cols)
 
             fig, ax = plt.subplots()
-            sns.countplot(x=df[var])
-            plt.xticks(rotation=45)
+            sns.boxplot(y=df[var])
             st.pyplot(fig)
 
-        else:
-            st.warning("No categorical variables found")
+        elif plot == "Scatter Plot":
 
-    # -----------------------------
-    # PAIR PLOT
-    # -----------------------------
+            x = st.selectbox("X Variable", numeric_cols)
+            y = st.selectbox("Y Variable", numeric_cols)
 
-    elif plot == "Pair Plot":
+            fig, ax = plt.subplots()
+            sns.scatterplot(x=df[x], y=df[y])
+            st.pyplot(fig)
 
-        st.write("Pairwise relationships between numeric variables")
+        elif plot == "Correlation Heatmap":
 
-        fig = sns.pairplot(df[numeric_cols])
-        st.pyplot(fig)
+            corr = df[numeric_cols].corr()
 
-    # -----------------------------
-    # CORRELATION HEATMAP
-    # -----------------------------
+            fig, ax = plt.subplots()
+            sns.heatmap(corr, annot=True, cmap="coolwarm")
 
-    elif plot == "Correlation Heatmap":
+            st.pyplot(fig)
 
-        corr = df[numeric_cols].corr()
-
-        fig, ax = plt.subplots()
-        sns.heatmap(corr, annot=True, cmap="coolwarm")
-        st.pyplot(fig)
 
 # =====================================================
-# HYPOTHESIS TESTING (BASIC)
+# HYPOTHESIS TESTING
 # =====================================================
 
-elif analysis_category == "Hypothesis Testing":
+    elif analysis_category == "Hypothesis Testing":
 
-    st.subheader("📊 Hypothesis Testing")
+        st.subheader("📊 Hypothesis Testing")
 
-    test = st.selectbox(
-        "Select Test",
-        [
-            "One-Sample t-Test",
-            "Two-Sample t-Test",
-            "Paired t-Test",
-            "Chi-Square Test",
-            "One-Way ANOVA"
-        ]
-    )
+        test = st.selectbox(
+            "Select Test",
+            [
+                "One-Sample t-Test",
+                "Two-Sample t-Test",
+                "Chi-Square Test"
+            ]
+        )
 
-    alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
+        alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
 
-# =====================================================
-# ONE SAMPLE T TEST
-# =====================================================
+        # -------------------------------------
 
-    if test == "One-Sample t-Test":
+        if test == "One-Sample t-Test":
 
-        var = st.selectbox("Variable", numeric_cols)
-        mu = st.number_input("Hypothesized Mean", value=0.0)
+            var = st.selectbox("Variable", numeric_cols)
+            mu = st.number_input("Hypothesized Mean",0.0)
 
-        if st.button("Run Test"):
+            if st.button("Run Test"):
 
-            data = df[var].dropna()
+                data = df[var].dropna()
 
-            stat, p = stats.ttest_1samp(data, mu)
+                stat,p = stats.ttest_1samp(data,mu)
 
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
+                st.write("t statistic:", round(stat,4))
+                st.write("p-value:", round(p,4))
 
-            if p < alpha:
-                st.success("Reject H₀: Mean differs from hypothesized value.")
-            else:
-                st.info("Fail to reject H₀.")
+                st.info(interpret_p(p))
 
-# =====================================================
-# TWO SAMPLE T TEST
-# =====================================================
+        # -------------------------------------
 
-    elif test == "Two-Sample t-Test":
+        elif test == "Two-Sample t-Test":
 
-        var = st.selectbox("Numeric Variable", numeric_cols)
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-        group = st.selectbox("Group Variable", cat_cols)
-
-        groups = df[group].unique()
-
-        g1 = st.selectbox("Group 1", groups)
-        g2 = st.selectbox("Group 2", groups)
-
-        if st.button("Run Test"):
-
-            d1 = df[df[group]==g1][var].dropna()
-            d2 = df[df[group]==g2][var].dropna()
-
-            stat, p = stats.ttest_ind(d1, d2)
-
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀: Means are significantly different.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# =====================================================
-# PAIRED T TEST
-# =====================================================
-
-    elif test == "Paired t-Test":
-
-        v1 = st.selectbox("Variable 1", numeric_cols)
-        v2 = st.selectbox("Variable 2", numeric_cols)
-
-        if st.button("Run Test"):
-
-            stat, p = stats.ttest_rel(df[v1], df[v2])
-
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀: Paired means differ.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# =====================================================
-# CHI SQUARE TEST
-# =====================================================
-
-    elif test == "Chi-Square Test":
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-
-        v1 = st.selectbox("Variable 1", cat_cols)
-        v2 = st.selectbox("Variable 2", cat_cols)
-
-        if st.button("Run Test"):
-
-            table = pd.crosstab(df[v1], df[v2])
-
-            stat, p, _, _ = stats.chi2_contingency(table)
-
-            st.dataframe(table)
-
-            st.write("Chi-square:", round(stat,4))
-            st.write("p-value:", round(p,4))
-
-            if p < alpha:
-                st.success("Reject H₀: Variables are associated.")
-            else:
-                st.info("Fail to reject H₀.")
-
-# =====================================================
-# ONE WAY ANOVA
-# =====================================================
-
-    elif test == "One-Way ANOVA":
-
-        var = st.selectbox("Numeric Variable", numeric_cols)
-
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
-        group = st.selectbox("Group Variable", cat_cols)
-
-        if st.button("Run ANOVA"):
+            var = st.selectbox("Numeric Variable", numeric_cols)
+            group = st.selectbox("Group Variable", categorical_cols)
 
             groups = df[group].unique()
 
-            data = [df[df[group]==g][var].dropna() for g in groups]
+            g1 = st.selectbox("Group 1", groups)
+            g2 = st.selectbox("Group 2", groups)
 
-            stat, p = stats.f_oneway(*data)
+            if st.button("Run Test"):
 
-            st.write("F statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
+                d1 = df[df[group]==g1][var].dropna()
+                d2 = df[df[group]==g2][var].dropna()
 
-            if p < alpha:
-                st.success("Reject H₀: At least one group mean differs.")
-            else:
-                st.info("Fail to reject H₀.")
+                stat,p = stats.ttest_ind(d1,d2)
+
+                st.write("t statistic:", round(stat,4))
+                st.write("p-value:", round(p,4))
+
+                st.info(interpret_p(p))
+
+        # -------------------------------------
+
+        elif test == "Chi-Square Test":
+
+            v1 = st.selectbox("Variable 1", categorical_cols)
+            v2 = st.selectbox("Variable 2", categorical_cols)
+
+            if st.button("Run Test"):
+
+                table = pd.crosstab(df[v1],df[v2])
+
+                stat,p,_,_ = stats.chi2_contingency(table)
+
+                st.dataframe(table)
+
+                st.write("Chi-square:", round(stat,4))
+                st.write("p-value:", round(p,4))
+
+                st.info(interpret_p(p))
 
 
-elif analysis_category == "Regression":
+# =====================================================
+# REGRESSION
+# =====================================================
 
-    st.subheader("📈 Regression Analysis")
+    elif analysis_category == "Regression":
 
-    model_type = st.selectbox(
-        "Model Type",
-        [
-            "Simple Linear Regression",
-            "Multiple Linear Regression"
-        ]
-    )
-
-    if model_type == "Simple Linear Regression":
+        st.subheader("📈 Linear Regression")
 
         x = st.selectbox("Independent Variable (X)", numeric_cols)
         y = st.selectbox("Dependent Variable (Y)", numeric_cols)
@@ -662,112 +465,24 @@ elif analysis_category == "Regression":
             Y = df[y].loc[X.index]
 
             model = LinearRegression()
-            model.fit(X, Y)
+            model.fit(X,Y)
 
             pred = model.predict(X)
 
-            r2 = r2_score(Y, pred)
-
-            st.write("### Model Results")
+            r2 = r2_score(Y,pred)
 
             st.write("Intercept:", model.intercept_)
             st.write("Slope:", model.coef_[0])
-            st.write("R²:", r2)
+            st.write("R²:", round(r2,4))
 
             st.info(interpret_r2(r2))
 
             fig, ax = plt.subplots()
 
-            sns.scatterplot(x=X[x], y=Y)
-            plt.plot(X, pred)
-
-            plt.title("Regression Fit")
+            sns.scatterplot(x=X[x],y=Y)
+            plt.plot(X,pred)
 
             st.pyplot(fig)
-
-    # ===============================================
-
-    elif model_type == "Multiple Linear Regression":
-
-        y = st.selectbox("Dependent Variable", numeric_cols)
-
-        Xvars = st.multiselect(
-            "Independent Variables",
-            [c for c in numeric_cols if c != y]
-        )
-
-        if st.button("Run Regression"):
-
-            X = df[Xvars].dropna()
-            Y = df[y].loc[X.index]
-
-            X = sm.add_constant(X)
-
-            model = sm.OLS(Y, X).fit()
-
-            st.write("### Model Summary")
-
-            st.text(model.summary())
-            
-elif analysis_category == "Chi-Square Tests":
-
-    st.subheader("📊 Chi-Square Analysis")
-
-    test = st.selectbox(
-        "Test Type",
-        [
-            "Test of Independence",
-            "Goodness of Fit"
-        ]
-    )
-
-    cat_cols = df.select_dtypes(include=["object","category"]).columns
-
-    # ===============================================
-
-    if test == "Test of Independence":
-
-        var1 = st.selectbox("Variable 1", cat_cols)
-        var2 = st.selectbox("Variable 2", cat_cols)
-
-        if st.button("Run Chi-Square Test"):
-
-            table = pd.crosstab(df[var1], df[var2])
-
-            stat, p, dof, exp = stats.chi2_contingency(table)
-
-            st.write("### Contingency Table")
-            st.dataframe(table)
-
-            st.write("Chi-square:", stat)
-            st.write("Degrees of Freedom:", dof)
-            st.write("p-value:", p)
-
-            st.info(interpret_p(p))
-
-    # ===============================================
-
-    elif test == "Goodness of Fit":
-
-        var = st.selectbox("Categorical Variable", cat_cols)
-
-        if st.button("Run Test"):
-
-            observed = df[var].value_counts().values
-
-            expected = np.repeat(
-                np.mean(observed),
-                len(observed)
-            )
-
-            stat, p = stats.chisquare(observed, expected)
-
-            st.write("Chi-square:", stat)
-            st.write("p-value:", p)
-
-            st.info(interpret_p(p))
-
-    
 # =====================================================
 # TIME SERIES
 # =====================================================
