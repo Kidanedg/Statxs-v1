@@ -671,7 +671,11 @@ elif analysis_category == "Hypothesis Testing":
             else:
                 st.info("Fail to reject H₀: No significant difference detected.")
 
-    elif analysis_category == "Estimation":
+    # =====================================================
+# ESTIMATION
+# =====================================================
+
+elif analysis_category == "Estimation":
 
     st.subheader("📐 Statistical Estimation")
 
@@ -698,12 +702,12 @@ elif analysis_category == "Hypothesis Testing":
     if method == "Point Estimation":
 
         if len(numeric_cols) == 0:
-            st.warning("Dataset contains no numeric variables.")
+            st.warning("No numeric variables available.")
             st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
-        if st.button("Estimate Parameters"):
+        if st.button("Compute Point Estimates"):
 
             data = df[var].dropna()
 
@@ -714,8 +718,8 @@ elif analysis_category == "Hypothesis Testing":
                 st.stop()
 
             mean = np.mean(data)
-            var_est = np.var(data,ddof=1)
-            std = np.std(data,ddof=1)
+            var_est = np.var(data, ddof=1)
+            std = np.std(data, ddof=1)
 
             st.metric("Sample Size", n)
             st.metric("Sample Mean", round(mean,4))
@@ -723,8 +727,8 @@ elif analysis_category == "Hypothesis Testing":
             st.metric("Sample Standard Deviation", round(std,4))
 
             st.info(
-                "Interpretation: These statistics serve as point estimates of the unknown "
-                "population parameters based on the observed sample."
+                "Interpretation: These statistics estimate the unknown population "
+                "parameters using the available sample data."
             )
 
 # =====================================================
@@ -734,14 +738,14 @@ elif analysis_category == "Hypothesis Testing":
     elif method == "Confidence Interval for Mean (t)":
 
         if len(numeric_cols) == 0:
-            st.warning("Dataset contains no numeric variables.")
+            st.warning("No numeric variables available.")
             st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute Confidence Interval"):
+        if st.button("Compute CI"):
 
             data = df[var].dropna()
 
@@ -752,17 +756,17 @@ elif analysis_category == "Hypothesis Testing":
                 st.stop()
 
             mean = np.mean(data)
-            std = np.std(data,ddof=1)
+            std = np.std(data, ddof=1)
 
-            t_value = stats.t.ppf((1+conf)/2,n-1)
+            t_value = stats.t.ppf((1+conf)/2, n-1)
 
-            margin = t_value*(std/np.sqrt(n))
+            margin = t_value * (std/np.sqrt(n))
 
-            lower = mean-margin
-            upper = mean+margin
+            lower = mean - margin
+            upper = mean + margin
 
-            st.write("Sample Mean:",round(mean,4))
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.write("Sample Mean:", round(mean,4))
+            st.write("Confidence Interval:", (round(lower,4), round(upper,4)))
 
             st.success(
                 f"We are {int(conf*100)}% confident that the population mean lies between "
@@ -776,14 +780,14 @@ elif analysis_category == "Hypothesis Testing":
     elif method == "Confidence Interval for Mean (z)":
 
         if len(numeric_cols) == 0:
-            st.warning("Dataset contains no numeric variables.")
+            st.warning("No numeric variables available.")
             st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute Confidence Interval"):
+        if st.button("Compute CI"):
 
             data = df[var].dropna()
 
@@ -793,21 +797,21 @@ elif analysis_category == "Hypothesis Testing":
                 st.warning("Z interval is typically recommended for large samples (n ≥ 30).")
 
             mean = np.mean(data)
-            std = np.std(data,ddof=1)
+            std = np.std(data, ddof=1)
 
             z = stats.norm.ppf((1+conf)/2)
 
-            margin = z*(std/np.sqrt(n))
+            margin = z * (std/np.sqrt(n))
 
-            lower = mean-margin
-            upper = mean+margin
+            lower = mean - margin
+            upper = mean + margin
 
-            st.write("Sample Mean:",round(mean,4))
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.write("Sample Mean:", round(mean,4))
+            st.write("Confidence Interval:", (round(lower,4), round(upper,4)))
 
             st.info(
-                f"Interpretation: With {int(conf*100)}% confidence, the true population mean "
-                "is contained in this interval."
+                f"Interpretation: With {int(conf*100)}% confidence, the population mean "
+                "is expected to lie within this interval."
             )
 
 # =====================================================
@@ -821,7 +825,7 @@ elif analysis_category == "Hypothesis Testing":
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute Confidence Interval"):
+        if st.button("Compute CI"):
 
             if n <= 0:
                 st.error("Sample size must be greater than zero.")
@@ -833,15 +837,15 @@ elif analysis_category == "Hypothesis Testing":
 
             margin = z*np.sqrt((p*(1-p))/n)
 
-            lower = p-margin
-            upper = p+margin
+            lower = p - margin
+            upper = p + margin
 
-            st.write("Sample Proportion:",round(p,4))
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.write("Sample Proportion:", round(p,4))
+            st.write("Confidence Interval:", (round(lower,4), round(upper,4)))
 
             st.success(
                 f"We are {int(conf*100)}% confident that the population proportion "
-                f"lies between {round(lower,4)} and {round(upper,4)}."
+                f"is between {round(lower,4)} and {round(upper,4)}."
             )
 
 # =====================================================
@@ -851,14 +855,14 @@ elif analysis_category == "Hypothesis Testing":
     elif method == "Confidence Interval for Variance":
 
         if len(numeric_cols) == 0:
-            st.warning("Dataset contains no numeric variables.")
+            st.warning("No numeric variables available.")
             st.stop()
 
         var = st.selectbox("Variable", numeric_cols)
 
         conf = st.slider("Confidence Level",0.80,0.99,0.95)
 
-        if st.button("Compute Confidence Interval"):
+        if st.button("Compute CI"):
 
             data = df[var].dropna()
 
@@ -868,16 +872,16 @@ elif analysis_category == "Hypothesis Testing":
                 st.error("Sample size must be at least 3.")
                 st.stop()
 
-            s2 = np.var(data,ddof=1)
+            s2 = np.var(data, ddof=1)
 
-            chi1 = stats.chi2.ppf((1-conf)/2,n-1)
-            chi2 = stats.chi2.ppf((1+conf)/2,n-1)
+            chi1 = stats.chi2.ppf((1-conf)/2, n-1)
+            chi2 = stats.chi2.ppf((1+conf)/2, n-1)
 
             lower = (n-1)*s2/chi2
             upper = (n-1)*s2/chi1
 
-            st.write("Sample Variance:",round(s2,4))
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.write("Sample Variance:", round(s2,4))
+            st.write("Confidence Interval:", (round(lower,4), round(upper,4)))
 
             st.info(
                 f"Interpretation: With {int(conf*100)}% confidence, the population variance "
@@ -897,18 +901,18 @@ elif analysis_category == "Hypothesis Testing":
         var = st.selectbox("Numeric Variable", numeric_cols)
         group = st.selectbox("Grouping Variable", categorical_cols)
 
-        conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
         groups = df[group].dropna().unique()
 
         if len(groups) < 2:
             st.warning("Grouping variable must contain at least two groups.")
             st.stop()
 
-        g1 = st.selectbox("Group 1",groups)
-        g2 = st.selectbox("Group 2",groups)
+        g1 = st.selectbox("Group 1", groups)
+        g2 = st.selectbox("Group 2", groups)
 
-        if st.button("Compute Confidence Interval"):
+        conf = st.slider("Confidence Level",0.80,0.99,0.95)
+
+        if st.button("Compute CI"):
 
             d1 = df[df[group]==g1][var].dropna()
             d2 = df[df[group]==g2][var].dropna()
@@ -917,34 +921,34 @@ elif analysis_category == "Hypothesis Testing":
             n2 = len(d2)
 
             if n1 < 2 or n2 < 2:
-                st.error("Each group must contain at least two observations.")
+                st.error("Each group must have at least 2 observations.")
                 st.stop()
 
             mean1 = np.mean(d1)
             mean2 = np.mean(d2)
 
-            s1 = np.var(d1,ddof=1)
-            s2 = np.var(d2,ddof=1)
+            var1 = np.var(d1, ddof=1)
+            var2 = np.var(d2, ddof=1)
 
-            se = np.sqrt(s1/n1 + s2/n2)
+            se = np.sqrt(var1/n1 + var2/n2)
 
-            dfree = min(n1-1,n2-1)
+            dfree = min(n1-1, n2-1)
 
-            t = stats.t.ppf((1+conf)/2,dfree)
+            t = stats.t.ppf((1+conf)/2, dfree)
 
-            diff = mean1-mean2
+            diff = mean1 - mean2
 
             margin = t*se
 
-            lower = diff-margin
-            upper = diff+margin
+            lower = diff - margin
+            upper = diff + margin
 
-            st.write("Mean Difference:",round(diff,4))
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.write("Mean Difference:", round(diff,4))
+            st.write("Confidence Interval:", (round(lower,4), round(upper,4)))
 
             st.success(
-                f"With {int(conf*100)}% confidence, the true difference in population means "
-                f"lies between {round(lower,4)} and {round(upper,4)}."
+                f"With {int(conf*100)}% confidence, the difference between population "
+                f"means lies between {round(lower,4)} and {round(upper,4)}."
             )
 
 
