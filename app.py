@@ -697,6 +697,173 @@ if df is not None:
                     st.text(final_model.summary())
 
                     st.info(interpret_r2(final_model.rsquared))
+
+# =====================================================
+# CHI-SQUARE TESTS
+# =====================================================
+
+    elif analysis_category == "Chi-Square Tests":
+
+        st.subheader("📊 Chi-Square Analysis")
+
+        test_type = st.selectbox(
+            "Select Test",
+            [
+                "Test of Independence",
+                "Goodness of Fit",
+                "Test of Homogeneity"
+            ]
+        )
+
+# =====================================================
+# TEST OF INDEPENDENCE
+# =====================================================
+
+        if test_type == "Test of Independence":
+
+            st.markdown("### Test of Independence")
+
+            st.write(
+            "Tests whether **two categorical variables are statistically independent**."
+            )
+
+            if len(categorical_cols) < 2:
+                st.warning("Dataset must contain at least two categorical variables.")
+            else:
+
+                var1 = st.selectbox("Variable 1", categorical_cols)
+                var2 = st.selectbox("Variable 2", categorical_cols)
+
+                if st.button("Run Test"):
+
+                    table = pd.crosstab(df[var1], df[var2])
+
+                    chi2, p, dof, expected = stats.chi2_contingency(table)
+
+                    st.markdown("### Contingency Table")
+                    st.dataframe(table)
+
+                    st.markdown("### Expected Frequencies")
+                    st.dataframe(pd.DataFrame(
+                        expected,
+                        index=table.index,
+                        columns=table.columns
+                    ))
+
+                    col1,col2,col3 = st.columns(3)
+
+                    col1.metric("Chi-square", round(chi2,4))
+                    col2.metric("Degrees of Freedom", dof)
+                    col3.metric("p-value", round(p,4))
+
+                    st.info(interpret_p(p))
+
+                    if p < 0.05:
+                        st.success("Conclusion: Variables are statistically associated.")
+                    else:
+                        st.warning("Conclusion: No significant association detected.")
+
+# =====================================================
+# GOODNESS OF FIT
+# =====================================================
+
+        elif test_type == "Goodness of Fit":
+
+            st.markdown("### Goodness-of-Fit Test")
+
+            st.write(
+            "Tests whether **observed frequencies match an expected distribution**."
+            )
+
+            if len(categorical_cols) == 0:
+                st.warning("Dataset must contain a categorical variable.")
+            else:
+
+                var = st.selectbox("Categorical Variable", categorical_cols)
+
+                if st.button("Run Test"):
+
+                    observed = df[var].value_counts()
+
+                    expected = np.repeat(
+                        observed.mean(),
+                        len(observed)
+                    )
+
+                    chi2, p = stats.chisquare(
+                        f_obs=observed.values,
+                        f_exp=expected
+                    )
+
+                    freq_table = pd.DataFrame({
+                        "Category": observed.index,
+                        "Observed": observed.values,
+                        "Expected": expected
+                    })
+
+                    st.markdown("### Frequency Table")
+                    st.dataframe(freq_table)
+
+                    col1,col2 = st.columns(2)
+
+                    col1.metric("Chi-square", round(chi2,4))
+                    col2.metric("p-value", round(p,4))
+
+                    st.info(interpret_p(p))
+
+                    if p < 0.05:
+                        st.success("Conclusion: Observed frequencies differ from expected distribution.")
+                    else:
+                        st.warning("Conclusion: Observed frequencies match the expected distribution.")
+
+# =====================================================
+# TEST OF HOMOGENEITY
+# =====================================================
+
+        elif test_type == "Test of Homogeneity":
+
+            st.markdown("### Test of Homogeneity")
+
+            st.write(
+            "Tests whether **different populations share the same distribution** of a categorical variable."
+            )
+
+            if len(categorical_cols) < 2:
+                st.warning("Dataset must contain at least two categorical variables.")
+            else:
+
+                group = st.selectbox("Group Variable", categorical_cols)
+                outcome = st.selectbox("Outcome Variable", categorical_cols)
+
+                if st.button("Run Test"):
+
+                    table = pd.crosstab(df[group], df[outcome])
+
+                    chi2, p, dof, expected = stats.chi2_contingency(table)
+
+                    st.markdown("### Frequency Table")
+                    st.dataframe(table)
+
+                    st.markdown("### Expected Frequencies")
+                    st.dataframe(pd.DataFrame(
+                        expected,
+                        index=table.index,
+                        columns=table.columns
+                    ))
+
+                    col1,col2,col3 = st.columns(3)
+
+                    col1.metric("Chi-square", round(chi2,4))
+                    col2.metric("Degrees of Freedom", dof)
+                    col3.metric("p-value", round(p,4))
+
+                    st.info(interpret_p(p))
+
+                    if p < 0.05:
+                        st.success("Conclusion: Distributions differ across populations.")
+                    else:
+                        st.warning("Conclusion: Distributions are homogeneous across groups.")
+
 # =====================================================
 # TIME SERIES
 # =====================================================
