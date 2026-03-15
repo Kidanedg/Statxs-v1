@@ -473,37 +473,45 @@ elif analysis_category == "Regression":
 
     if model_type == "Simple Linear Regression":
 
-        x = st.selectbox("Independent Variable (X)", numeric_cols)
-        y = st.selectbox("Dependent Variable (Y)", numeric_cols)
+        if len(numeric_cols) < 2:
+            st.warning("Dataset must contain at least two numeric variables.")
+        else:
 
-        if st.button("Run Model"):
+            x = st.selectbox("Independent Variable (X)", numeric_cols)
+            y = st.selectbox("Dependent Variable (Y)", numeric_cols)
 
-            X = df[[x]].dropna()
-            Y = df[y].loc[X.index]
+            if st.button("Run Model"):
 
-            model = LinearRegression()
-            model.fit(X,Y)
+                data = df[[x, y]].dropna()
 
-            pred = model.predict(X)
+                X = data[[x]]
+                Y = data[y]
 
-            r2 = r2_score(Y,pred)
+                model = LinearRegression()
+                model.fit(X, Y)
 
-            st.markdown("### Model Results")
+                pred = model.predict(X)
 
-            st.write("Intercept:", round(model.intercept_,4))
-            st.write("Slope:", round(model.coef_[0],4))
-            st.write("R²:", round(r2,4))
+                r2 = r2_score(Y, pred)
 
-            st.info(interpret_r2(r2))
+                st.markdown("### Model Results")
 
-            fig, ax = plt.subplots()
+                col1, col2, col3 = st.columns(3)
 
-            sns.scatterplot(x=X[x],y=Y)
-            plt.plot(X,pred)
+                col1.metric("Intercept", round(model.intercept_,4))
+                col2.metric("Slope", round(model.coef_[0],4))
+                col3.metric("R²", round(r2,4))
 
-            plt.title("Regression Fit")
+                st.info(interpret_r2(r2))
 
-            st.pyplot(fig)
+                fig, ax = plt.subplots()
+
+                sns.scatterplot(x=X[x], y=Y)
+                plt.plot(X, pred)
+
+                plt.title("Regression Fit")
+
+                st.pyplot(fig)
 
 # =====================================================
 # MULTIPLE LINEAR REGRESSION
@@ -520,19 +528,22 @@ elif analysis_category == "Regression":
 
         if st.button("Run Model"):
 
-            X = df[Xvars].dropna()
-            Y = df[y].loc[X.index]
+            if len(Xvars) == 0:
+                st.warning("Select at least one independent variable.")
+            else:
 
-            X = sm.add_constant(X)
+                data = df[[y] + Xvars].dropna()
 
-            model = sm.OLS(Y,X).fit()
+                X = sm.add_constant(data[Xvars])
+                Y = data[y]
 
-            st.markdown("### Model Summary")
+                model = sm.OLS(Y, X).fit()
 
-            st.text(model.summary())
+                st.markdown("### Model Summary")
 
-            r2 = model.rsquared
-            st.info(interpret_r2(r2))
+                st.text(model.summary())
+
+                st.info(interpret_r2(model.rsquared))
 
 # =====================================================
 # LOGISTIC REGRESSION
@@ -542,27 +553,41 @@ elif analysis_category == "Regression":
 
         cat_cols = df.select_dtypes(include=["object","category"]).columns
 
-        y = st.selectbox("Binary Dependent Variable", cat_cols)
+        if len(cat_cols) == 0:
+            st.warning("Dataset must contain a categorical variable.")
+        else:
 
-        Xvars = st.multiselect(
-            "Independent Variables",
-            numeric_cols
-        )
+            y = st.selectbox("Binary Dependent Variable", cat_cols)
 
-        if st.button("Run Model"):
+            Xvars = st.multiselect(
+                "Independent Variables",
+                numeric_cols
+            )
 
-            X = df[Xvars].dropna()
-            Y = df[y].loc[X.index]
+            if st.button("Run Model"):
 
-            Y = pd.factorize(Y)[0]
+                if len(Xvars) == 0:
+                    st.warning("Select predictors.")
+                else:
 
-            model = sm.Logit(Y, sm.add_constant(X)).fit(disp=0)
+                    data = df[[y] + Xvars].dropna()
 
-            st.markdown("### Logistic Model Summary")
+                    if data[y].nunique() != 2:
+                        st.error("Dependent variable must have exactly 2 categories.")
+                    else:
 
-            st.text(model.summary())
+                        Y = pd.factorize(data[y])[0]
+                        X = sm.add_constant(data[Xvars])
 
-            st.info("Interpretation: coefficients represent log-odds changes.")
+                        model = sm.Logit(Y, X).fit(disp=0)
+
+                        st.markdown("### Logistic Model Summary")
+
+                        st.text(model.summary())
+
+                        st.info(
+                            "Interpretation: coefficients represent change in log-odds."
+                        )
 
 # =====================================================
 # POISSON REGRESSION
@@ -579,20 +604,32 @@ elif analysis_category == "Regression":
 
         if st.button("Run Model"):
 
-            X = df[Xvars].dropna()
-            Y = df[y].loc[X.index]
+            if len(Xvars) == 0:
+                st.warning("Select predictors.")
+            else:
 
-            X = sm.add_constant(X)
+                data = df[[y] + Xvars].dropna()
 
-            model = sm.GLM(Y,X,family=sm.families.Poisson()).fit()
+                if (data[y] < 0).any():
+                    st.error("Poisson regression requires non-negative count data.")
+                else:
 
-            st.markdown("### Poisson Model Summary")
+                    X = sm.add_constant(data[Xvars])
+                    Y = data[y]
 
-            st.text(model.summary())
+                    model = sm.GLM(
+                        Y,
+                        X,
+                        family=sm.families.Poisson()
+                    ).fit()
 
-            st.info(
-                "Interpretation: coefficients represent expected log count changes."
-            )
+                    st.markdown("### Poisson Model Summary")
+
+                    st.text(model.summary())
+
+                    st.info(
+                        "Interpretation: coefficients show expected log-count change."
+                    )
 
 # =====================================================
 # STEPWISE REGRESSION
@@ -609,50 +646,57 @@ elif analysis_category == "Regression":
 
         if st.button("Run Stepwise Regression"):
 
-            remaining = list(Xvars)
-            selected = []
-            current_score = 0
-            best_new_score = 0
+            if len(Xvars) == 0:
+                st.warning("Select candidate variables.")
+            else:
 
-            while remaining:
+                data = df[[y] + Xvars].dropna()
 
-                scores = []
+                remaining = list(Xvars)
+                selected = []
+                current_score = 0
 
-                for candidate in remaining:
+                while remaining:
 
-                    formula = selected + [candidate]
+                    scores = []
 
-                    X = sm.add_constant(df[formula])
-                    Y = df[y]
+                    for candidate in remaining:
 
-                    model = sm.OLS(Y,X).fit()
+                        predictors = selected + [candidate]
 
-                    score = model.rsquared
+                        X = sm.add_constant(data[predictors])
+                        Y = data[y]
 
-                    scores.append((score,candidate))
+                        model = sm.OLS(Y, X).fit()
 
-                scores.sort()
-                best_new_score, best_candidate = scores.pop()
+                        scores.append((model.rsquared, candidate))
 
-                if best_new_score > current_score:
+                    scores.sort()
 
-                    remaining.remove(best_candidate)
-                    selected.append(best_candidate)
-                    current_score = best_new_score
+                    best_score, best_candidate = scores[-1]
 
-                else:
-                    break
+                    if best_score > current_score:
 
-            st.write("Selected Variables:", selected)
+                        remaining.remove(best_candidate)
+                        selected.append(best_candidate)
+                        current_score = best_score
 
-            X = sm.add_constant(df[selected])
-            Y = df[y]
+                    else:
+                        break
 
-            final_model = sm.OLS(Y,X).fit()
+                st.write("### Selected Variables")
+                st.write(selected)
 
-            st.text(final_model.summary())
+                X = sm.add_constant(data[selected])
+                Y = data[y]
 
-            st.info(interpret_r2(final_model.rsquared))
+                final_model = sm.OLS(Y, X).fit()
+
+                st.text(final_model.summary())
+
+                st.info(interpret_r2(final_model.rsquared))
+
+# =====================================================
             
 # =====================================================
 # TIME SERIES
