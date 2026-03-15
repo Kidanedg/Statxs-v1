@@ -1,4 +1,3 @@
-```python
 # =====================================================
 # StatX v1 – Statistical Analysis Platform
 # =====================================================
@@ -234,4 +233,3 @@ if df is not None:
 else:
 
     st.info("Upload a dataset to begin analysis.")
-```
