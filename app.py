@@ -452,252 +452,251 @@ if df is not None:
 # REGRESSION
 # =====================================================
 
-elif analysis_category == "Regression":
+    elif analysis_category == "Regression":
 
-    st.subheader("📈 Regression Analysis")
+        st.subheader("📈 Regression Analysis")
 
-    model_type = st.selectbox(
-        "Regression Model",
-        [
-            "Simple Linear Regression",
-            "Multiple Linear Regression",
-            "Logistic Regression",
-            "Poisson Regression",
-            "Stepwise Regression"
-        ]
-    )
-
-# =====================================================
-# SIMPLE LINEAR REGRESSION
-# =====================================================
-
-    if model_type == "Simple Linear Regression":
-
-        if len(numeric_cols) < 2:
-            st.warning("Dataset must contain at least two numeric variables.")
-        else:
-
-            x = st.selectbox("Independent Variable (X)", numeric_cols)
-            y = st.selectbox("Dependent Variable (Y)", numeric_cols)
-
-            if st.button("Run Model"):
-
-                data = df[[x, y]].dropna()
-
-                X = data[[x]]
-                Y = data[y]
-
-                model = LinearRegression()
-                model.fit(X, Y)
-
-                pred = model.predict(X)
-
-                r2 = r2_score(Y, pred)
-
-                st.markdown("### Model Results")
-
-                col1, col2, col3 = st.columns(3)
-
-                col1.metric("Intercept", round(model.intercept_,4))
-                col2.metric("Slope", round(model.coef_[0],4))
-                col3.metric("R²", round(r2,4))
-
-                st.info(interpret_r2(r2))
-
-                fig, ax = plt.subplots()
-
-                sns.scatterplot(x=X[x], y=Y)
-                plt.plot(X, pred)
-
-                plt.title("Regression Fit")
-
-                st.pyplot(fig)
-
-# =====================================================
-# MULTIPLE LINEAR REGRESSION
-# =====================================================
-
-    elif model_type == "Multiple Linear Regression":
-
-        y = st.selectbox("Dependent Variable", numeric_cols)
-
-        Xvars = st.multiselect(
-            "Independent Variables",
-            [c for c in numeric_cols if c != y]
+        model_type = st.selectbox(
+            "Regression Model",
+            [
+                "Simple Linear Regression",
+                "Multiple Linear Regression",
+                "Logistic Regression",
+                "Poisson Regression",
+                "Stepwise Regression"
+            ]
         )
 
-        if st.button("Run Model"):
+    # =====================================================
+    # SIMPLE LINEAR REGRESSION
+    # =====================================================
 
-            if len(Xvars) == 0:
-                st.warning("Select at least one independent variable.")
+        if model_type == "Simple Linear Regression":
+
+            if len(numeric_cols) < 2:
+                st.warning("Dataset must contain at least two numeric variables.")
+
             else:
 
-                data = df[[y] + Xvars].dropna()
+                x = st.selectbox("Independent Variable (X)", numeric_cols)
+                y = st.selectbox("Dependent Variable (Y)", numeric_cols)
 
-                X = sm.add_constant(data[Xvars])
-                Y = data[y]
+                if st.button("Run Regression"):
 
-                model = sm.OLS(Y, X).fit()
+                    data = df[[x,y]].dropna()
 
-                st.markdown("### Model Summary")
+                    X = data[[x]]
+                    Y = data[y]
 
-                st.text(model.summary())
+                    model = LinearRegression()
+                    model.fit(X,Y)
 
-                st.info(interpret_r2(model.rsquared))
+                    pred = model.predict(X)
 
-# =====================================================
-# LOGISTIC REGRESSION
-# =====================================================
+                    r2 = r2_score(Y,pred)
 
-    elif model_type == "Logistic Regression":
+                    st.markdown("### Model Results")
 
-        cat_cols = df.select_dtypes(include=["object","category"]).columns
+                    col1,col2,col3 = st.columns(3)
 
-        if len(cat_cols) == 0:
-            st.warning("Dataset must contain a categorical variable.")
-        else:
+                    col1.metric("Intercept", round(model.intercept_,4))
+                    col2.metric("Slope", round(model.coef_[0],4))
+                    col3.metric("R²", round(r2,4))
 
-            y = st.selectbox("Binary Dependent Variable", cat_cols)
+                    st.info(interpret_r2(r2))
+
+                    fig, ax = plt.subplots()
+
+                    sns.scatterplot(x=X[x],y=Y)
+                    ax.plot(X,pred)
+
+                    ax.set_title("Simple Linear Regression")
+
+                    st.pyplot(fig)
+
+    # =====================================================
+    # MULTIPLE LINEAR REGRESSION
+    # =====================================================
+
+        elif model_type == "Multiple Linear Regression":
+
+            y = st.selectbox("Dependent Variable", numeric_cols)
 
             Xvars = st.multiselect(
                 "Independent Variables",
-                numeric_cols
+                [c for c in numeric_cols if c != y]
             )
 
-            if st.button("Run Model"):
+            if st.button("Run Regression"):
 
                 if len(Xvars) == 0:
-                    st.warning("Select predictors.")
+                    st.warning("Select at least one independent variable.")
+
                 else:
 
-                    data = df[[y] + Xvars].dropna()
-
-                    if data[y].nunique() != 2:
-                        st.error("Dependent variable must have exactly 2 categories.")
-                    else:
-
-                        Y = pd.factorize(data[y])[0]
-                        X = sm.add_constant(data[Xvars])
-
-                        model = sm.Logit(Y, X).fit(disp=0)
-
-                        st.markdown("### Logistic Model Summary")
-
-                        st.text(model.summary())
-
-                        st.info(
-                            "Interpretation: coefficients represent change in log-odds."
-                        )
-
-# =====================================================
-# POISSON REGRESSION
-# =====================================================
-
-    elif model_type == "Poisson Regression":
-
-        y = st.selectbox("Count Dependent Variable", numeric_cols)
-
-        Xvars = st.multiselect(
-            "Independent Variables",
-            [c for c in numeric_cols if c != y]
-        )
-
-        if st.button("Run Model"):
-
-            if len(Xvars) == 0:
-                st.warning("Select predictors.")
-            else:
-
-                data = df[[y] + Xvars].dropna()
-
-                if (data[y] < 0).any():
-                    st.error("Poisson regression requires non-negative count data.")
-                else:
+                    data = df[[y]+Xvars].dropna()
 
                     X = sm.add_constant(data[Xvars])
                     Y = data[y]
 
-                    model = sm.GLM(
-                        Y,
-                        X,
-                        family=sm.families.Poisson()
-                    ).fit()
+                    model = sm.OLS(Y,X).fit()
 
-                    st.markdown("### Poisson Model Summary")
+                    st.markdown("### Model Summary")
 
                     st.text(model.summary())
 
-                    st.info(
-                        "Interpretation: coefficients show expected log-count change."
-                    )
+                    st.info(interpret_r2(model.rsquared))
 
-# =====================================================
-# STEPWISE REGRESSION
-# =====================================================
+    # =====================================================
+    # LOGISTIC REGRESSION
+    # =====================================================
 
-    elif model_type == "Stepwise Regression":
+        elif model_type == "Logistic Regression":
 
-        y = st.selectbox("Dependent Variable", numeric_cols)
+            if len(categorical_cols) == 0:
+                st.warning("Dataset must contain a categorical variable.")
 
-        Xvars = st.multiselect(
-            "Candidate Variables",
-            [c for c in numeric_cols if c != y]
-        )
-
-        if st.button("Run Stepwise Regression"):
-
-            if len(Xvars) == 0:
-                st.warning("Select candidate variables.")
             else:
 
-                data = df[[y] + Xvars].dropna()
+                y = st.selectbox("Binary Dependent Variable", categorical_cols)
 
-                remaining = list(Xvars)
-                selected = []
-                current_score = 0
+                Xvars = st.multiselect(
+                    "Independent Variables",
+                    numeric_cols
+                )
 
-                while remaining:
+                if st.button("Run Logistic Regression"):
 
-                    scores = []
-
-                    for candidate in remaining:
-
-                        predictors = selected + [candidate]
-
-                        X = sm.add_constant(data[predictors])
-                        Y = data[y]
-
-                        model = sm.OLS(Y, X).fit()
-
-                        scores.append((model.rsquared, candidate))
-
-                    scores.sort()
-
-                    best_score, best_candidate = scores[-1]
-
-                    if best_score > current_score:
-
-                        remaining.remove(best_candidate)
-                        selected.append(best_candidate)
-                        current_score = best_score
+                    if len(Xvars) == 0:
+                        st.warning("Select predictors.")
 
                     else:
-                        break
 
-                st.write("### Selected Variables")
-                st.write(selected)
+                        data = df[[y]+Xvars].dropna()
 
-                X = sm.add_constant(data[selected])
-                Y = data[y]
+                        if data[y].nunique() != 2:
+                            st.error("Dependent variable must have exactly 2 categories.")
 
-                final_model = sm.OLS(Y, X).fit()
+                        else:
 
-                st.text(final_model.summary())
+                            Y = pd.factorize(data[y])[0]
+                            X = sm.add_constant(data[Xvars])
 
-                st.info(interpret_r2(final_model.rsquared))
+                            model = sm.Logit(Y,X).fit(disp=0)
 
-# =====================================================
-            
+                            st.markdown("### Logistic Regression Summary")
+
+                            st.text(model.summary())
+
+                            st.info("Interpretation: coefficients represent change in log-odds.")
+
+    # =====================================================
+    # POISSON REGRESSION
+    # =====================================================
+
+        elif model_type == "Poisson Regression":
+
+            y = st.selectbox("Count Dependent Variable", numeric_cols)
+
+            Xvars = st.multiselect(
+                "Independent Variables",
+                [c for c in numeric_cols if c != y]
+            )
+
+            if st.button("Run Poisson Regression"):
+
+                if len(Xvars) == 0:
+                    st.warning("Select predictors.")
+
+                else:
+
+                    data = df[[y]+Xvars].dropna()
+
+                    if (data[y] < 0).any():
+                        st.error("Poisson regression requires non-negative count data.")
+
+                    else:
+
+                        X = sm.add_constant(data[Xvars])
+                        Y = data[y]
+
+                        model = sm.GLM(
+                            Y,
+                            X,
+                            family=sm.families.Poisson()
+                        ).fit()
+
+                        st.markdown("### Poisson Regression Summary")
+
+                        st.text(model.summary())
+
+                        st.info("Interpretation: coefficients show expected log-count change.")
+
+    # =====================================================
+    # STEPWISE REGRESSION
+    # =====================================================
+
+        elif model_type == "Stepwise Regression":
+
+            y = st.selectbox("Dependent Variable", numeric_cols)
+
+            Xvars = st.multiselect(
+                "Candidate Variables",
+                [c for c in numeric_cols if c != y]
+            )
+
+            if st.button("Run Stepwise Regression"):
+
+                if len(Xvars) == 0:
+                    st.warning("Select candidate variables.")
+
+                else:
+
+                    data = df[[y]+Xvars].dropna()
+
+                    remaining = list(Xvars)
+                    selected = []
+                    current_score = 0
+
+                    while remaining:
+
+                        scores = []
+
+                        for candidate in remaining:
+
+                            predictors = selected+[candidate]
+
+                            X = sm.add_constant(data[predictors])
+                            Y = data[y]
+
+                            model = sm.OLS(Y,X).fit()
+
+                            scores.append((model.rsquared,candidate))
+
+                        scores.sort()
+
+                        best_score,best_candidate = scores[-1]
+
+                        if best_score > current_score:
+
+                            remaining.remove(best_candidate)
+                            selected.append(best_candidate)
+                            current_score = best_score
+
+                        else:
+                            break
+
+                    st.write("### Selected Variables")
+                    st.write(selected)
+
+                    X = sm.add_constant(data[selected])
+                    Y = data[y]
+
+                    final_model = sm.OLS(Y,X).fit()
+
+                    st.text(final_model.summary())
+
+                    st.info(interpret_r2(final_model.rsquared))
 # =====================================================
 # TIME SERIES
 # =====================================================
