@@ -250,7 +250,42 @@ if df is not None:
 
             st.pyplot(fig)
             
- # =====================================================
+# =====================================================
+# REGRESSION OUTPUT FORMATTER
+# =====================================================
+
+def regression_table(model, test_stat="t"):
+
+    coef_table = pd.DataFrame({
+        "Variable": model.params.index,
+        "Estimate": model.params.values,
+        "Std Error": model.bse.values,
+        f"{test_stat}-value": model.tvalues.values,
+        "p-value": model.pvalues.values,
+        "CI Lower": model.conf_int()[0].values,
+        "CI Upper": model.conf_int()[1].values
+    })
+
+    coef_table = coef_table.round(4)
+
+    def stars(p):
+        if p < 0.001:
+            return "***"
+        elif p < 0.01:
+            return "**"
+        elif p < 0.05:
+            return "*"
+        elif p < 0.1:
+            return "."
+        else:
+            return ""
+
+    coef_table["Sig"] = coef_table["p-value"].apply(stars)
+
+    return coef_table
+
+
+# =====================================================
 # REGRESSION
 # =====================================================
 
@@ -291,28 +326,33 @@ if analysis_category == "Regression":
 
             model = sm.OLS(Y,X).fit()
 
-            st.markdown("### Model Summary")
+            st.markdown("### 📊 Model Fit Statistics")
 
-            col1,col2,col3,col4 = st.columns(4)
+            fit_table = pd.DataFrame({
+                "Statistic":[
+                    "R-squared",
+                    "Adjusted R-squared",
+                    "AIC",
+                    "BIC",
+                    "Observations"
+                ],
+                "Value":[
+                    round(model.rsquared,4),
+                    round(model.rsquared_adj,4),
+                    round(model.aic,2),
+                    round(model.bic,2),
+                    int(model.nobs)
+                ]
+            })
 
-            col1.metric("R²", round(model.rsquared,4))
-            col2.metric("Adj R²", round(model.rsquared_adj,4))
-            col3.metric("AIC", round(model.aic,2))
-            col4.metric("BIC", round(model.bic,2))
+            st.table(fit_table)
 
             st.info(interpret_r2(model.rsquared))
 
-            coef_table = pd.DataFrame({
-                "Coefficient": model.params,
-                "Std Error": model.bse,
-                "t value": model.tvalues,
-                "p-value": model.pvalues,
-                "CI Lower": model.conf_int()[0],
-                "CI Upper": model.conf_int()[1]
-            })
+            coef_table = regression_table(model)
 
-            st.markdown("### Coefficients")
-            st.dataframe(coef_table.round(4), use_container_width=True)
+            st.markdown("### 📑 Coefficient Estimates")
+            st.dataframe(coef_table, use_container_width=True)
 
             intercept = model.params["const"]
             slope = model.params[x]
@@ -322,7 +362,6 @@ if analysis_category == "Regression":
             )
 
             fig, ax = plt.subplots()
-
             sns.regplot(x=data[x], y=data[y], ci=95, ax=ax)
 
             ax.set_title("Simple Linear Regression")
@@ -330,6 +369,7 @@ if analysis_category == "Regression":
             ax.set_ylabel(y)
 
             st.pyplot(fig)
+
 
 # =====================================================
 # MULTIPLE LINEAR REGRESSION
@@ -357,28 +397,34 @@ if analysis_category == "Regression":
 
             model = sm.OLS(Y,X).fit()
 
-            st.markdown("### Model Summary")
+            st.markdown("### 📊 Model Fit Statistics")
 
-            col1,col2,col3,col4 = st.columns(4)
+            fit_table = pd.DataFrame({
+                "Statistic":[
+                    "R-squared",
+                    "Adjusted R-squared",
+                    "AIC",
+                    "BIC",
+                    "Observations"
+                ],
+                "Value":[
+                    round(model.rsquared,4),
+                    round(model.rsquared_adj,4),
+                    round(model.aic,2),
+                    round(model.bic,2),
+                    int(model.nobs)
+                ]
+            })
 
-            col1.metric("R²", round(model.rsquared,4))
-            col2.metric("Adj R²", round(model.rsquared_adj,4))
-            col3.metric("AIC", round(model.aic,2))
-            col4.metric("BIC", round(model.bic,2))
+            st.table(fit_table)
 
             st.info(interpret_r2(model.rsquared))
 
-            coef_table = pd.DataFrame({
-                "Coefficient": model.params,
-                "Std Error": model.bse,
-                "t value": model.tvalues,
-                "p-value": model.pvalues,
-                "CI Lower": model.conf_int()[0],
-                "CI Upper": model.conf_int()[1]
-            })
+            coef_table = regression_table(model)
 
-            st.markdown("### Coefficient Table")
-            st.dataframe(coef_table.round(4), use_container_width=True)
+            st.markdown("### 📑 Coefficient Estimates")
+            st.dataframe(coef_table, use_container_width=True)
+
 
 # =====================================================
 # LOGISTIC REGRESSION
@@ -411,21 +457,15 @@ if analysis_category == "Regression":
 
             model = sm.Logit(Y,X).fit(disp=0)
 
-            st.markdown("### Logistic Regression Model")
+            coef_table = regression_table(model, test_stat="z")
 
-            coef_table = pd.DataFrame({
-                "Coefficient": model.params,
-                "Std Error": model.bse,
-                "z value": model.tvalues,
-                "p-value": model.pvalues
-            })
-
-            st.dataframe(coef_table.round(4), use_container_width=True)
+            st.markdown("### 📑 Logistic Regression Coefficients")
+            st.dataframe(coef_table, use_container_width=True)
 
             st.info(
-                "Interpretation: Positive coefficients increase the log-odds "
-                "of the event occurring."
+                "Positive coefficients increase the log-odds of the event occurring."
             )
+
 
 # =====================================================
 # POISSON REGRESSION
@@ -455,27 +495,17 @@ if analysis_category == "Regression":
             X = sm.add_constant(data[Xvars])
             Y = data[y]
 
-            model = sm.GLM(
-                Y,
-                X,
-                family=sm.families.Poisson()
-            ).fit()
+            model = sm.GLM(Y, X, family=sm.families.Poisson()).fit()
 
-            st.markdown("### Poisson Regression Model")
+            coef_table = regression_table(model, test_stat="z")
 
-            coef_table = pd.DataFrame({
-                "Coefficient": model.params,
-                "Std Error": model.bse,
-                "z value": model.tvalues,
-                "p-value": model.pvalues
-            })
-
-            st.dataframe(coef_table.round(4), use_container_width=True)
+            st.markdown("### 📑 Poisson Regression Coefficients")
+            st.dataframe(coef_table, use_container_width=True)
 
             st.info(
-                "Interpretation: coefficients represent expected change "
-                "in log-count of the response variable."
+                "Coefficients represent expected change in the log-count of the response variable."
             )
+
 
 # =====================================================
 # STEPWISE REGRESSION
@@ -531,15 +561,10 @@ if analysis_category == "Regression":
 
             final_model = sm.OLS(Y,X).fit()
 
-            coef_table = pd.DataFrame({
-                "Coefficient": final_model.params,
-                "Std Error": final_model.bse,
-                "t value": final_model.tvalues,
-                "p-value": final_model.pvalues
-            })
+            coef_table = regression_table(final_model)
 
-            st.markdown("### Final Model")
-            st.dataframe(coef_table.round(4), use_container_width=True)
+            st.markdown("### 📑 Final Model")
+            st.dataframe(coef_table, use_container_width=True)
 
             st.info(interpret_r2(final_model.rsquared))
             
