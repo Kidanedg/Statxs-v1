@@ -1,5 +1,5 @@
 # =====================================================
-# StatX v1 – Statistical Analysis Platform
+# StatX v1 – Statistical Analysis Software
 # =====================================================
 
 import streamlit as st
@@ -11,11 +11,9 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
-
-import streamlit as st
-import streamlit as st
 
 # =====================================================
 # PAGE CONFIG
@@ -28,90 +26,18 @@ st.set_page_config(
 )
 
 # =====================================================
-# CUSTOM STYLE
+# HEADER
 # =====================================================
 
-st.markdown("""
-<style>
-
-.main-title{
-    font-size:64px;
-    font-weight:900;
-    text-align:center;
-    color:#cc0000;
-    letter-spacing:2px;
-}
-
-.version{
-    text-align:center;
-    font-size:16px;
-    color:gray;
-}
-
-.subtitle{
-    font-size:30px;
-    text-align:center;
-    color:black;
-    font-weight:700;
-}
-
-.description{
-    text-align:center;
-    font-size:19px;
-    color:#444;
-    padding-top:10px;
-    line-height:1.6;
-}
-
-.divider{
-    height:4px;
-    background-color:#cc0000;
-    border-radius:5px;
-    margin-top:15px;
-    margin-bottom:30px;
-}
-
-.footer{
-    text-align:center;
-    font-size:14px;
-    color:gray;
-    margin-top:80px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# =====================================================
-# FRONT PAGE HEADER
-# =====================================================
-
-st.markdown('<div class="main-title">StatX</div>', unsafe_allow_html=True)
-
-st.markdown('<div class="version">Version 1.0</div>', unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="subtitle">StatX Statistical WebLab Software</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+st.title("StatX")
+st.subheader("Statistical WebLab Software")
 
 st.markdown(
 """
-<div class="description">
-
-A modern scientific environment for  
-<b>statistical computing, data analysis, and data visualization.</b>
-
-Upload a dataset to perform statistical analysis with  
-<b>automatic interpretation and interactive graphics.</b>
-
-</div>
-""",
-unsafe_allow_html=True
+A scientific environment for **statistical computing,
+data analysis and visualization**.
+"""
 )
-
 
 # =====================================================
 # COPYRIGHT
@@ -119,27 +45,21 @@ unsafe_allow_html=True
 
 st.markdown(
 """
-<div class="footer">
-© 2024–2026 <b>Dr. Kidane Desta</b> — Founder of <b>StatX Software</b><br>
-All Rights Reserved.
-</div>
-""",
-unsafe_allow_html=True
+---
+© 2024–2026 **Dr. Kidane Desta**  
+Founder of **StatX Software**
+"""
 )
+
 # =====================================================
-# DATA UPLOAD SYSTEM
+# DATA UPLOAD
 # =====================================================
 
-st.sidebar.markdown("## 📂 Dataset Manager")
+st.sidebar.header("Dataset Manager")
 
 uploaded = st.sidebar.file_uploader(
     "Upload Dataset",
-    type=[
-        "csv", "xlsx", "xls",
-        "txt", "json",
-        "parquet",
-        "dta", "sav"
-    ]
+    type=["csv","xlsx","xls","txt","json","parquet","dta","sav"]
 )
 
 df = None
@@ -157,11 +77,11 @@ if uploaded:
         if file_name.endswith(".csv"):
             df = pd.read_csv(uploaded)
 
-        elif file_name.endswith((".xlsx", ".xls")):
+        elif file_name.endswith((".xlsx",".xls")):
             df = pd.read_excel(uploaded)
 
         elif file_name.endswith(".txt"):
-            df = pd.read_csv(uploaded, sep=None, engine="python")
+            df = pd.read_csv(uploaded,sep=None,engine="python")
 
         elif file_name.endswith(".json"):
             df = pd.read_json(uploaded)
@@ -175,70 +95,43 @@ if uploaded:
         elif file_name.endswith(".sav"):
             df = pd.read_spss(uploaded)
 
-        st.sidebar.success("✅ Dataset Loaded")
+        st.sidebar.success("Dataset Loaded")
 
     except Exception as e:
-        st.sidebar.error(f"❌ Error loading dataset: {e}")
+
+        st.sidebar.error(f"Error loading dataset: {e}")
+
+
 # =====================================================
-# DATASET DISPLAY PAGE
+# DATASET OVERVIEW
 # =====================================================
 
 if df is not None:
 
-    st.markdown("## 📊 Dataset Overview")
+    st.subheader("Dataset Overview")
 
-    col1, col2, col3 = st.columns(3)
+    col1,col2,col3 = st.columns(3)
 
-    col1.metric("Rows", df.shape[0])
-    col2.metric("Columns", df.shape[1])
-    col3.metric("Missing Values", df.isna().sum().sum())
+    col1.metric("Rows",df.shape[0])
+    col2.metric("Columns",df.shape[1])
+    col3.metric("Missing Values",df.isna().sum().sum())
 
     st.divider()
 
-    # -------------------------------------------
-    # DATA PREVIEW
-    # -------------------------------------------
+    st.subheader("Data Preview")
+    st.dataframe(df.head(20))
 
-    st.markdown("### 🔎 Data Preview")
-    st.dataframe(df.head(20), use_container_width=True)
-
-    # -------------------------------------------
-    # COLUMN INFORMATION
-    # -------------------------------------------
-
-    st.markdown("### 📑 Column Information")
+    st.divider()
 
     info_df = pd.DataFrame({
-        "Column": df.columns,
-        "Type": df.dtypes.astype(str),
-        "Missing Values": df.isna().sum().values
+        "Column":df.columns,
+        "Type":df.dtypes.astype(str),
+        "Missing":df.isna().sum().values
     })
 
-    st.dataframe(info_df, use_container_width=True)
-
-    st.divider()
-
-else:
-
-    st.markdown(
-        """
-        # 📈 Welcome to **StatX v1**
-
-        Upload a dataset from the sidebar to begin statistical analysis.
-
-        ### Supported Formats
-
-        - CSV
-        - Excel
-        - TXT
-        - JSON
-        - Parquet
-        - SPSS (.sav)
-        - Stata (.dta)
-        """
-    )
-
-
+    st.subheader("Column Information")
+    st.dataframe(info_df)
+    
 # =====================================================
 # INTERPRETATION FUNCTIONS
 # =====================================================
@@ -246,27 +139,27 @@ else:
 def interpret_p(p):
 
     if p < 0.01:
-        return "Strong evidence against the null hypothesis (p < 0.01). Reject H₀."
+        return "Strong evidence against H0"
     elif p < 0.05:
-        return "Statistically significant at 5% level (p < 0.05). Reject H₀."
+        return "Statistically significant"
     else:
-        return "Not statistically significant (p ≥ 0.05). Fail to reject H₀."
+        return "Not statistically significant"
 
 
 def interpret_r2(r2):
 
     if r2 > 0.75:
-        return "Very strong model fit."
+        return "Very strong model fit"
     elif r2 > 0.50:
-        return "Moderate model fit."
+        return "Moderate model fit"
     elif r2 > 0.25:
-        return "Weak model fit."
+        return "Weak model fit"
     else:
-        return "Very weak model fit."
+        return "Very weak model fit"
 
 
 # =====================================================
-# MAIN ANALYSIS
+# ANALYSIS MENU
 # =====================================================
 
 if df is not None:
@@ -274,302 +167,119 @@ if df is not None:
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
     categorical_cols = df.select_dtypes(exclude=np.number).columns.tolist()
 
-    st.sidebar.markdown("## 📊 StatX Analysis Menu")
+    st.sidebar.header("Analysis Modules")
 
     analysis_category = st.sidebar.selectbox(
-        "Select Analysis Module",
+        "Select Module",
         [
             "Descriptive Statistics",
             "Graphics",
+            "Regression",
             "Hypothesis Testing",
             "Estimation",
-            "Regression Analysis",
-            "Chi-Square & Categorical Tests",
+            "Chi-Square Tests",
+            "Time Series",
             "ANOVA",
-            "Design of Experiments (DOE)",
-            "Time Series Analysis",
-            "Quality Control",
+            "Design of Experiments",
             "Multivariate Analysis",
             "Biostatistics",
             "Bioinformatics",
             "Biometrics",
             "Biomolecular Modeling",
-            "Chemoinformatics"
+            "Chemoinformatics",
+            "Quality Control"
         ]
     )
-elif analysis_category == "Descriptive Statistics":
 
-    st.subheader("📑 Descriptive Statistics")
 
-    if df is None:
-        st.warning("Please upload a dataset first.")
-        st.stop()
+# =====================================================
+# DESCRIPTIVE STATISTICS
+# =====================================================
 
-    if len(numeric_cols) == 0:
-        st.warning("No numeric variables available.")
-        st.stop()
+    if analysis_category == "Descriptive Statistics":
 
-    var = st.selectbox("Select Variable", numeric_cols)
+        st.subheader("Descriptive Statistics")
 
-    data = df[var].dropna()
+        var = st.selectbox("Variable",numeric_cols)
 
-    if len(data) < 2:
-        st.warning("Not enough observations.")
-        st.stop()
+        data = df[var].dropna()
 
-    summary = pd.DataFrame({
-        "Statistic":[
-            "Sample Size",
-            "Mean",
-            "Median",
-            "Standard Deviation",
-            "Variance",
-            "Minimum",
-            "Maximum",
-            "Skewness",
-            "Kurtosis"
-        ],
-        "Value":[
-            len(data),
-            np.mean(data),
-            np.median(data),
-            np.std(data,ddof=1),
-            np.var(data,ddof=1),
-            np.min(data),
-            np.max(data),
-            stats.skew(data),
-            stats.kurtosis(data)
-        ]
-    })
+        summary = pd.DataFrame({
+            "Statistic":[
+                "Sample Size",
+                "Mean",
+                "Median",
+                "Std Dev",
+                "Variance",
+                "Minimum",
+                "Maximum",
+                "Skewness",
+                "Kurtosis"
+            ],
+            "Value":[
+                len(data),
+                np.mean(data),
+                np.median(data),
+                np.std(data,ddof=1),
+                np.var(data,ddof=1),
+                np.min(data),
+                np.max(data),
+                stats.skew(data),
+                stats.kurtosis(data)
+            ]
+        })
 
-    summary["Value"] = summary["Value"].round(4)
+        st.dataframe(summary.round(4),use_container_width=True)
 
-    st.dataframe(summary, use_container_width=True)
+
+# =====================================================
+# GRAPHICS
+# =====================================================
+
     elif analysis_category == "Graphics":
 
-    st.subheader("📊 Data Visualization")
+        st.subheader("Data Visualization")
 
-    if df is None:
-        st.warning("Please upload a dataset first.")
-        st.stop()
-
-    plot = st.selectbox(
-        "Plot Type",
-        [
-            "Histogram",
-            "Boxplot",
-            "Scatter Plot",
-            "Correlation Heatmap"
-        ]
-    )
-
-    # -----------------------------
-    # HISTOGRAM
-    # -----------------------------
-
-    if plot == "Histogram":
-
-        if len(numeric_cols) == 0:
-            st.warning("No numeric variables available.")
-            st.stop()
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-
-        sns.histplot(df[var].dropna(), kde=True, ax=ax)
-
-        ax.set_title(f"Histogram of {var}")
-        ax.set_xlabel(var)
-        ax.set_ylabel("Frequency")
-
-        st.pyplot(fig)
-
-    # -----------------------------
-    # BOXPLOT
-    # -----------------------------
-
-    elif plot == "Boxplot":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-
-        sns.boxplot(y=df[var], ax=ax)
-
-        ax.set_title(f"Boxplot of {var}")
-
-        st.pyplot(fig)
-
-    # -----------------------------
-    # SCATTER PLOT
-    # -----------------------------
-
-    elif plot == "Scatter Plot":
-
-        if len(numeric_cols) < 2:
-            st.warning("At least two numeric variables required.")
-            st.stop()
-
-        x = st.selectbox("X Variable", numeric_cols)
-        y = st.selectbox("Y Variable", numeric_cols)
-
-        fig, ax = plt.subplots()
-
-        sns.scatterplot(x=df[x], y=df[y], ax=ax)
-
-        ax.set_title(f"{y} vs {x}")
-
-        st.pyplot(fig)
-
-    # -----------------------------
-    # CORRELATION HEATMAP
-    # -----------------------------
-
-    elif plot == "Correlation Heatmap":
-
-        if len(numeric_cols) < 2:
-            st.warning("At least two numeric variables required.")
-            st.stop()
-
-        corr = df[numeric_cols].corr()
-
-        fig, ax = plt.subplots()
-
-        sns.heatmap(
-            corr,
-            annot=True,
-            cmap="coolwarm",
-            fmt=".2f",
-            ax=ax
+        plot = st.selectbox(
+            "Plot Type",
+            [
+                "Histogram",
+                "Boxplot",
+                "Scatter Plot"
+            ]
         )
 
-        ax.set_title("Correlation Matrix")
+        if plot == "Histogram":
 
-        st.pyplot(fig)
-        elif analysis_category == "Hypothesis Testing":
+            var = st.selectbox("Variable",numeric_cols)
 
-    st.subheader("📊 Hypothesis Testing")
+            fig,ax = plt.subplots()
 
-    if df is None:
-        st.warning("Please upload a dataset first.")
-        st.stop()
+            sns.histplot(df[var],kde=True,ax=ax)
 
-    test = st.selectbox(
-        "Select Statistical Test",
-        [
-            "One-Sample t-Test",
-            "Two-Sample t-Test (Independent)",
-            "Paired t-Test",
-            "Z-Test (Large Sample Mean)",
-            "Proportion Test"
-        ]
-    )
+            st.pyplot(fig)
 
-    alpha = st.slider("Significance Level (α)",0.01,0.10,0.05)
+        elif plot == "Boxplot":
 
-    if test == "One-Sample t-Test":
+            var = st.selectbox("Variable",numeric_cols)
 
-        var = st.selectbox("Variable", numeric_cols)
-        mu = st.number_input("Hypothesized Mean (μ₀)",0.0)
+            fig,ax = plt.subplots()
 
-        if st.button("Run One Sample t-Test"):
+            sns.boxplot(y=df[var],ax=ax)
 
-            data = df[var].dropna()
+            st.pyplot(fig)
 
-            stat,p = stats.ttest_1samp(data,mu)
+        elif plot == "Scatter Plot":
 
-            st.write("Sample Mean:", round(np.mean(data),4))
-            st.write("t statistic:", round(stat,4))
-            st.write("p-value:", round(p,4))
+            x = st.selectbox("X Variable",numeric_cols)
+            y = st.selectbox("Y Variable",numeric_cols)
 
-            if p < alpha:
-                st.success("Reject H₀")
-            else:
-                st.info("Fail to reject H₀")
-                elif analysis_category == "Estimation":
+            fig,ax = plt.subplots()
 
-    st.subheader("📐 Statistical Estimation")
+            sns.scatterplot(x=df[x],y=df[y],ax=ax)
 
-    if df is None:
-        st.warning("Please upload a dataset first.")
-        st.stop()
-
-    method = st.selectbox(
-        "Estimation Method",
-        [
-            "Point Estimation",
-            "Confidence Interval for Mean (t)",
-            "Confidence Interval for Proportion"
-        ]
-    )
-
-# -----------------------------------------------------
-# POINT ESTIMATION
-# -----------------------------------------------------
-
-    if method == "Point Estimation":
-
-        var = st.selectbox("Variable", numeric_cols)
-
-        if st.button("Compute Point Estimates"):
-
-            data = df[var].dropna()
-
-            st.metric("Sample Size", len(data))
-            st.metric("Sample Mean", round(np.mean(data),4))
-            st.metric("Sample Variance", round(np.var(data,ddof=1),4))
-            st.metric("Sample Std Dev", round(np.std(data,ddof=1),4))
-
-# -----------------------------------------------------
-# CI FOR MEAN
-# -----------------------------------------------------
-
-    elif method == "Confidence Interval for Mean (t)":
-
-        var = st.selectbox("Variable", numeric_cols)
-        conf = st.slider("Confidence Level",0.80,0.99,0.95)
-
-        if st.button("Compute Mean CI"):
-
-            data = df[var].dropna()
-
-            n=len(data)
-            mean=np.mean(data)
-            std=np.std(data,ddof=1)
-
-            t=stats.t.ppf((1+conf)/2,n-1)
-
-            margin=t*(std/np.sqrt(n))
-
-            lower=mean-margin
-            upper=mean+margin
-
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
-
-# -----------------------------------------------------
-# CI FOR PROPORTION
-# -----------------------------------------------------
-
-    elif method == "Confidence Interval for Proportion":
-
-        successes=st.number_input("Successes",0)
-        n=st.number_input("Sample Size",1)
-
-        conf=st.slider("Confidence Level",0.80,0.99,0.95)
-
-        if st.button("Compute Proportion CI"):
-
-            p=successes/n
-
-            z=stats.norm.ppf((1+conf)/2)
-
-            margin=z*np.sqrt((p*(1-p))/n)
-
-            lower=p-margin
-            upper=p+margin
-
-            st.write("Confidence Interval:",(round(lower,4),round(upper,4)))
+            st.pyplot(fig)
+            
     
 # =====================================================
 # REGRESSION
@@ -712,7 +422,7 @@ elif analysis_category == "Descriptive Statistics":
                             st.text(model.summary())
 
                             st.info("Interpretation: coefficients represent change in log-odds.")
-
+if df is not None:
     # =====================================================
     # POISSON REGRESSION
     # =====================================================
@@ -820,7 +530,7 @@ elif analysis_category == "Descriptive Statistics":
                     st.text(final_model.summary())
 
                     st.info(interpret_r2(final_model.rsquared))
-
+if df is not None:
 # =====================================================
 # CHI-SQUARE TESTS
 # =====================================================
@@ -986,6 +696,8 @@ elif analysis_category == "Descriptive Statistics":
                         st.success("Conclusion: Distributions differ across populations.")
                     else:
                         st.warning("Conclusion: Distributions are homogeneous across groups.")
+
+if df is not None:
 
 
 # =====================================================
