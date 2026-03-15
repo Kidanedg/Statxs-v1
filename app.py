@@ -280,7 +280,7 @@ if df is not None:
         "Select Analysis Module",
         [
             "Descriptive Statistics",
-            "Graphics & Visualization",
+            "Graphics",
             "Hypothesis Testing",
             "Estimation",
             "Regression Analysis",
