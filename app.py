@@ -206,49 +206,368 @@ if df is not None:
 # GRAPHICS
 # =====================================================
 
-    if analysis_category == "Graphics":
+if analysis_category == "Graphics":
 
-        st.subheader("Data Visualization")
+    st.subheader("Data Visualization")
 
-        plot = st.selectbox(
-            "Plot Type",
-            [
-                "Histogram",
-                "Boxplot",
-                "Scatter Plot"
-            ]
-        )
+    plot = st.selectbox(
+        "Plot Type",
+        [
+            "Histogram",
+            "Density Plot",
+            "Boxplot",
+            "Violin Plot",
+            "Scatter Plot",
+            "Regression Plot",
+            "Line Plot",
+            "Area Plot",
+            "Bar Chart",
+            "Pie Chart",
+            "Count Plot",
+            "Strip Plot",
+            "Swarm Plot",
+            "Pair Plot",
+            "Correlation Heatmap",
+            "Joint Plot",
+            "Hexbin Plot",
+            "ECDF Plot",
+            "QQ Plot",
+            "3D Scatter Plot"
+        ]
+    )
 
-        if plot == "Histogram":
+# -----------------------------------------------------
+# HISTOGRAM
+# -----------------------------------------------------
 
-            var = st.selectbox("Variable",numeric_cols)
+    if plot == "Histogram":
 
-            fig,ax = plt.subplots()
+        var = st.selectbox("Variable", numeric_cols)
 
-            sns.histplot(df[var],kde=True,ax=ax)
+        bins = st.slider("Bins",5,50,20)
+
+        fig, ax = plt.subplots()
+
+        sns.histplot(df[var], bins=bins, kde=True, ax=ax)
+
+        ax.set_title("Histogram")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# DENSITY
+# -----------------------------------------------------
+
+    elif plot == "Density Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.kdeplot(df[var], fill=True)
+
+        ax.set_title("Density Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# BOXPLOT
+# -----------------------------------------------------
+
+    elif plot == "Boxplot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.boxplot(y=df[var])
+
+        ax.set_title("Boxplot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# VIOLIN
+# -----------------------------------------------------
+
+    elif plot == "Violin Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.violinplot(y=df[var])
+
+        ax.set_title("Violin Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# SCATTER
+# -----------------------------------------------------
+
+    elif plot == "Scatter Plot":
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.scatterplot(x=df[x], y=df[y])
+
+        ax.set_title("Scatter Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# REGRESSION
+# -----------------------------------------------------
+
+    elif plot == "Regression Plot":
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.regplot(x=df[x], y=df[y])
+
+        ax.set_title("Regression Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# LINE
+# -----------------------------------------------------
+
+    elif plot == "Line Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        ax.plot(df[var])
+
+        ax.set_title("Line Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# AREA
+# -----------------------------------------------------
+
+    elif plot == "Area Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        ax.fill_between(range(len(df[var])), df[var])
+
+        ax.set_title("Area Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# BAR
+# -----------------------------------------------------
+
+    elif plot == "Bar Chart":
+
+        cat = st.selectbox("Category Variable", categorical_cols)
+
+        counts = df[cat].value_counts()
+
+        fig, ax = plt.subplots()
+
+        counts.plot(kind="bar", ax=ax)
+
+        ax.set_title("Bar Chart")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# PIE
+# -----------------------------------------------------
+
+    elif plot == "Pie Chart":
+
+        cat = st.selectbox("Category Variable", categorical_cols)
+
+        counts = df[cat].value_counts()
+
+        fig, ax = plt.subplots()
+
+        ax.pie(counts, labels=counts.index, autopct="%1.1f%%")
+
+        ax.set_title("Pie Chart")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# COUNT
+# -----------------------------------------------------
+
+    elif plot == "Count Plot":
+
+        cat = st.selectbox("Category Variable", categorical_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.countplot(x=df[cat])
+
+        ax.set_title("Count Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# STRIP
+# -----------------------------------------------------
+
+    elif plot == "Strip Plot":
+
+        cat = st.selectbox("Category", categorical_cols)
+        num = st.selectbox("Numeric", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.stripplot(x=df[cat], y=df[num])
+
+        ax.set_title("Strip Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# SWARM
+# -----------------------------------------------------
+
+    elif plot == "Swarm Plot":
+
+        cat = st.selectbox("Category", categorical_cols)
+        num = st.selectbox("Numeric", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        sns.swarmplot(x=df[cat], y=df[num])
+
+        ax.set_title("Swarm Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# PAIRPLOT
+# -----------------------------------------------------
+
+    elif plot == "Pair Plot":
+
+        cols = st.multiselect("Variables", numeric_cols)
+
+        if len(cols) > 1:
+
+            fig = sns.pairplot(df[cols])
 
             st.pyplot(fig)
 
-        elif plot == "Boxplot":
+# -----------------------------------------------------
+# HEATMAP
+# -----------------------------------------------------
 
-            var = st.selectbox("Variable",numeric_cols)
+    elif plot == "Correlation Heatmap":
 
-            fig,ax = plt.subplots()
+        corr = df[numeric_cols].corr()
 
-            sns.boxplot(y=df[var],ax=ax)
+        fig, ax = plt.subplots(figsize=(8,6))
 
-            st.pyplot(fig)
+        sns.heatmap(corr, annot=True, cmap="coolwarm")
 
-        elif plot == "Scatter Plot":
+        ax.set_title("Correlation Heatmap")
 
-            x = st.selectbox("X Variable",numeric_cols)
-            y = st.selectbox("Y Variable",numeric_cols)
+        st.pyplot(fig)
 
-            fig,ax = plt.subplots()
+# -----------------------------------------------------
+# JOINTPLOT
+# -----------------------------------------------------
 
-            sns.scatterplot(x=df[x],y=df[y],ax=ax)
+    elif plot == "Joint Plot":
 
-            st.pyplot(fig)
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig = sns.jointplot(x=df[x], y=df[y], kind="scatter")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# HEXBIN
+# -----------------------------------------------------
+
+    elif plot == "Hexbin Plot":
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+
+        fig, ax = plt.subplots()
+
+        ax.hexbin(df[x], df[y], gridsize=30)
+
+        ax.set_title("Hexbin Plot")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# ECDF
+# -----------------------------------------------------
+
+    elif plot == "ECDF Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        x = np.sort(df[var])
+        y = np.arange(1,len(x)+1)/len(x)
+
+        fig, ax = plt.subplots()
+
+        ax.plot(x,y,marker=".",linestyle="none")
+
+        ax.set_title("Empirical CDF")
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# QQ
+# -----------------------------------------------------
+
+    elif plot == "QQ Plot":
+
+        var = st.selectbox("Variable", numeric_cols)
+
+        fig = sm.qqplot(df[var], line='s')
+
+        st.pyplot(fig)
+
+# -----------------------------------------------------
+# 3D SCATTER
+# -----------------------------------------------------
+
+    elif plot == "3D Scatter Plot":
+
+        from mpl_toolkits.mplot3d import Axes3D
+
+        x = st.selectbox("X Variable", numeric_cols)
+        y = st.selectbox("Y Variable", numeric_cols)
+        z = st.selectbox("Z Variable", numeric_cols)
+
+        fig = plt.figure()
+
+        ax = fig.add_subplot(111, projection="3d")
+
+        ax.scatter(df[x], df[y], df[z])
+
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+        ax.set_zlabel(z)
+
+        st.pyplot(fig)
             
 # =====================================================
 # REGRESSION OUTPUT FORMATTER
